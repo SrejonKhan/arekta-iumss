@@ -1,0 +1,89 @@
+version: "3.8"
+name: nokshi-boilerplate
+
+services:
+  backend:
+    container_name: backend
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend.dev
+    environment:
+      - NODE_ENV=development
+    ports:
+      - 2222:2222 # main app
+      - 5555:5555 # prisma studio
+    volumes:
+      - ./backend:/home/node/backend
+      - /home/node/backend/node_modules
+    depends_on:
+      mongodb1:
+        condition: service_started
+
+  # PostgreSQL
+  mongodb1:
+    container_name: mongodb1
+    image: mongo:7.0.0
+    command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27017"]
+    ports:
+      - 27017:27017
+    healthcheck:
+      test: echo "try { rs.status() } catch (err) { rs.initiate({_id:'rs0',members:[{_id:0,host:'mongodb1:27017',priority:1},{_id:1,host:'mongodb2:27018',priority:0.5},{_id:2,host:'mongodb3:27019',priority:0.5}]}) }" | mongosh --port 27017 --quiet
+      interval: 5s
+      timeout: 30s
+      start_period: 0s
+      start_interval: 1s
+      retries: 30
+    volumes:
+      - ./data/mongodb1_data:/data/db
+      - ./data/mongodb1_config:/data/configdb
+
+  mongodb2:
+    container_name: mongodb2
+    image: mongo:7.0.0
+    command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27018"]
+    ports:
+      - 27018:27018
+    volumes:
+      - ./data/mongodb2_data:/data/db
+      - ./data/mongodb2_config:/data/configdb
+
+  mongodb3:
+    container_name: mongodb3
+    image: mongo:7.0.0
+    command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27019"]
+    ports:
+      - 27019:27019
+    volumes:
+      - ./data/mongodb3_data:/data/db
+      - ./data/mongodb3_data:/data/configdb
+
+  # Swagger UI
+  swagger-ui:
+    container_name: swagger-ui
+    image: swaggerapi/swagger-ui:latest
+    hostname: swagger-ui
+    ports:
+      - 8080:8080
+    volumes:
+      - ../backends/docs/api:/docs
+    environment:
+      - SWAGGER_JSON=/docs/openapi-docs.yml
+
+  rabbitmq:
+    container_name: rabbitmq
+    image: rabbitmq:3-management
+    ports:
+      - 5672:5672
+      - 15672:15672
+    env_file:
+      - ./shared/rabbitmq/.env.development
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    # networks:
+    #   - default_netwowrk
+volumes:
+  pgdata:
