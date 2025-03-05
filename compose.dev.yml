@@ -2,6 +2,20 @@ version: "3.8"
 name: nokshi-boilerplate
 
 services:
+  frontend:
+    container_name: frontend
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.frontend.dev
+    environment:
+      - NODE_ENV=development
+    ports:
+      - 3000:3000
+    volumes:
+      - ./frontend:/home/node/frontend
+      - /home/node/frontend/node_modules
+      - /home/node/frontend/.next
+
   backend:
     container_name: backend
     build:
