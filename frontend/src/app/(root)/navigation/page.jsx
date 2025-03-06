@@ -11,6 +11,7 @@ export default function Navigation() {
     const [isSceneLoading, setIsSceneLoading] = useState(true);
     const [hasDevicePermissions, setHasDevicePermissions] = useState(false);
     const sceneRef = useRef(null);
+    const [showLocationPrompt, setShowLocationPrompt] = useState(true);
 
     // Function to calculate offset coordinates
     const calculateOffsetCoordinates = (baseLat, baseLon, offsetMeters) => {
@@ -48,6 +49,29 @@ export default function Navigation() {
         }
     };
 
+    const requestLocationPermission = async () => {
+        try {
+            console.log("Requesting location permission...");
+            const position = await new Promise((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => resolve(position),
+                    (error) => reject(error),
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 0
+                    }
+                );
+            });
+            
+            setShowLocationPrompt(false);
+            return position;
+        } catch (error) {
+            console.error("Location permission error:", error);
+            throw error;
+        }
+    };
+
     // Modify the checkDeviceCompatibility function
     const checkDeviceCompatibility = async () => {
         try {
@@ -60,21 +84,8 @@ export default function Navigation() {
                 throw new Error("Please use a mobile device for AR navigation");
             }
 
-            // Request location permission first
-            console.log("Requesting location permission...");
-            const locationPermission = await new Promise((resolve, reject) => {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => resolve(position),
-                    (error) => reject(error),
-                    {
-                        enableHighAccuracy: true,
-                        timeout: 10000,
-                        maximumAge: 0
-                    }
-                );
-            });
-
-            console.log("Location permission granted");
+            // Location permission will be handled separately
+            const locationPermission = await requestLocationPermission();
             const currentLat = locationPermission.coords.latitude;
             const currentLon = locationPermission.coords.longitude;
 
@@ -141,7 +152,8 @@ export default function Navigation() {
             if (err.name === 'NotAllowedError') {
                 errorMessage = 'Camera access denied. Please grant camera permissions and refresh the page.';
             } else if (err.code === 1) { // PERMISSION_DENIED for geolocation
-                errorMessage = 'Location access denied. Please grant location permissions and refresh the page.';
+                setShowLocationPrompt(true);
+                errorMessage = 'Location access denied. Please grant location permissions to continue.';
             } else if (err.code === 2) { // POSITION_UNAVAILABLE
                 errorMessage = 'Location unavailable. Please ensure location services are enabled.';
             } else if (err.code === 3) { // TIMEOUT
@@ -153,10 +165,11 @@ export default function Navigation() {
         }
     };
 
-    // Modify the useEffect to handle permissions
     useEffect(() => {
-        checkDeviceCompatibility();
-    }, []);
+        if (!showLocationPrompt) {
+            checkDeviceCompatibility();
+        }
+    }, [showLocationPrompt]);
 
     // Handle A-Frame scene initialization
     useEffect(() => {
@@ -213,20 +226,24 @@ export default function Navigation() {
         }
     }, [isLoading, error]);
 
-    // Add a permission request button for iOS
-    if (!hasDevicePermissions && !error) {
+    // Add location permission prompt
+    if (showLocationPrompt) {
         return (
             <div className="flex items-center justify-center h-screen">
-                <div className="text-center">
+                <div className="text-center p-6 max-w-sm mx-auto bg-white rounded-xl shadow-lg">
+                    <h2 className="text-xl font-bold mb-4">Location Access Required</h2>
+                    <p className="text-gray-600 mb-6">
+                        This AR experience needs access to your location to show nearby points of interest.
+                    </p>
                     <button 
-                        onClick={requestDeviceOrientationPermission}
-                        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                        onClick={() => requestLocationPermission()}
+                        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg w-full"
                     >
-                        Enable AR Features
+                        Enable Location Access
                     </button>
-                    <div className="mt-4 text-sm text-gray-500">
-                        Please click to enable device orientation for AR
-                    </div>
+                    <p className="text-sm text-gray-500 mt-4">
+                        You can change this permission in your browser settings at any time.
+                    </p>
                 </div>
             </div>
         );
