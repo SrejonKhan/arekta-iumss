@@ -153,6 +153,14 @@ export default function Navigation() {
                     ))}
                 </a-scene>
             </div>
+            {/* print all the pois with their name and coordinates */}
+            {pois.map((poi) => (
+                <div key={poi.id}>
+                    {poi.name}
+                    {poi.lat}
+                    {poi.lon}
+                </div>
+            ))}
         </>
     );
 }
