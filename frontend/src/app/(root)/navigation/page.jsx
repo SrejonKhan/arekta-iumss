@@ -52,7 +52,7 @@ export default function Navigation() {
                     { 
                         id: 1, 
                         name: "Library", 
-                        ...calculateOffsetCoordinates(currentLat, currentLon, { north: 50, east: 30 })
+                        ...calculateOffsetCoordinates(currentLat, currentLon, { north: 2, east: 2 })
                     },
                     { 
                         id: 2, 
