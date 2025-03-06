@@ -8,14 +8,20 @@ export default function Navigation() {
     const [userLocation, setUserLocation] = useState(null);
     const [pois, setPois] = useState([]);
 
-    // Campus POIs with their names and coordinates
-    const campusPOIs = [
-        { id: 1, name: "Library", lat: 23.810331, lon: 90.412521 }, // Replace with actual coordinates
-        { id: 2, name: "Cafeteria", lat: 0, lon: 0 },
-        { id: 3, name: "Main Hall", lat: 0, lon: 0 },
-        { id: 4, name: "Sports Complex", lat: 0, lon: 0 },
-        { id: 5, name: "Parking", lat: 0, lon: 0 }
-    ];
+    // Function to calculate offset coordinates
+    const calculateOffsetCoordinates = (baseLat, baseLon, offsetMeters) => {
+        // Earth's radius in meters
+        const R = 6371000;
+        
+        // Convert offset from meters to degrees
+        const latOffset = (offsetMeters.north / R) * (180 / Math.PI);
+        const lonOffset = (offsetMeters.east / (R * Math.cos(baseLat * Math.PI / 180))) * (180 / Math.PI);
+        
+        return {
+            lat: baseLat + latOffset,
+            lon: baseLon + lonOffset
+        };
+    };
 
     useEffect(() => {
         // Check if running on mobile and has necessary permissions
@@ -33,12 +39,44 @@ export default function Navigation() {
                     });
                 });
 
+                const currentLat = position.coords.latitude;
+                const currentLon = position.coords.longitude;
+
                 setUserLocation({
-                    lat: position.coords.latitude,
-                    lon: position.coords.longitude
+                    lat: currentLat,
+                    lon: currentLon
                 });
 
-                setPois(campusPOIs);
+                // Define POIs relative to user's location
+                const relativePOIs = [
+                    { 
+                        id: 1, 
+                        name: "Library", 
+                        ...calculateOffsetCoordinates(currentLat, currentLon, { north: 50, east: 30 })
+                    },
+                    { 
+                        id: 2, 
+                        name: "Cafeteria", 
+                        ...calculateOffsetCoordinates(currentLat, currentLon, { north: -20, east: 40 })
+                    },
+                    { 
+                        id: 3, 
+                        name: "Main Hall", 
+                        ...calculateOffsetCoordinates(currentLat, currentLon, { north: 30, east: -25 })
+                    },
+                    { 
+                        id: 4, 
+                        name: "Sports Complex", 
+                        ...calculateOffsetCoordinates(currentLat, currentLon, { north: -40, east: -35 })
+                    },
+                    { 
+                        id: 5, 
+                        name: "Parking", 
+                        ...calculateOffsetCoordinates(currentLat, currentLon, { north: 15, east: 60 })
+                    }
+                ];
+
+                setPois(relativePOIs);
                 setIsLoading(false);
             } catch (err) {
                 setError(err.message);
@@ -50,7 +88,14 @@ export default function Navigation() {
     }, []);
 
     if (isLoading) {
-        return <div className="flex items-center justify-center h-screen">Loading AR Navigation...</div>;
+        return (
+            <div className="flex items-center justify-center h-screen">
+                <div className="text-center">
+                    <div className="mb-4">Loading AR Navigation...</div>
+                    <div className="text-sm text-gray-500">Please allow location access when prompted</div>
+                </div>
+            </div>
+        );
     }
 
     if (error) {
@@ -67,6 +112,10 @@ export default function Navigation() {
             <Script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js" />
             
             <div style={{ height: '100vh', width: '100vw', position: 'relative' }}>
+                <div className="absolute top-0 left-0 z-10 bg-black bg-opacity-50 text-white p-2 m-2 rounded">
+                    Your Location: {userLocation?.lat.toFixed(6)}, {userLocation?.lon.toFixed(6)}
+                </div>
+                
                 <a-scene
                     embedded
                     arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
@@ -93,7 +142,7 @@ export default function Navigation() {
                                 scale="1 1 1"
                             ></a-box>
                             <a-text
-                                value={poi.name}
+                                value={`${poi.name}\n(${(poi.lat - userLocation.lat).toFixed(6)}, ${(poi.lon - userLocation.lon).toFixed(6)})`}
                                 look-at="[gps-camera]"
                                 scale="10 10 10"
                                 align="center"
