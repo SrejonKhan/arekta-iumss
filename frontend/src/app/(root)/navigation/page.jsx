@@ -7,6 +7,7 @@ export default function Navigation() {
     const [error, setError] = useState(null);
     const [userLocation, setUserLocation] = useState(null);
     const [pois, setPois] = useState([]);
+    const [isSceneReady, setIsSceneReady] = useState(false);
 
     // Function to calculate offset coordinates
     const calculateOffsetCoordinates = (baseLat, baseLon, offsetMeters) => {
@@ -87,6 +88,11 @@ export default function Navigation() {
         checkDeviceCompatibility();
     }, []);
 
+    // Handle A-Frame scene initialization
+    const handleSceneLoaded = () => {
+        setIsSceneReady(true);
+    };
+
     if (isLoading) {
         return (
             <div className="flex items-center justify-center h-screen">
@@ -108,8 +114,8 @@ export default function Navigation() {
 
     return (
         <>
-            <Script src="https://aframe.io/releases/1.4.0/aframe.min.js" />
-            <Script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js" />
+            <Script src="https://aframe.io/releases/1.4.0/aframe.min.js" strategy="beforeInteractive" />
+            <Script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js" strategy="beforeInteractive" />
             
             <div style={{ height: '100vh', width: '100vw', position: 'relative' }}>
                 <div className="absolute top-0 left-0 z-10 bg-black bg-opacity-50 text-white p-2 m-2 rounded">
@@ -122,14 +128,15 @@ export default function Navigation() {
                     vr-mode-ui="enabled: false"
                     renderer="logarithmicDepthBuffer: true;"
                     inspector="url: https://cdn.jsdelivr.net/gh/aframevr/aframe-inspector@master/dist/aframe-inspector.min.js"
+                    onLoad={handleSceneLoaded}
                 >
                     <a-camera
                         gps-camera="minDistance: 1; maxDistance: 100000"
                         rotation-reader
                         position="0 1.6 0"
-                    ></a-camera>
-
-                    {pois.map((poi) => (
+                    />
+                    
+                    {isSceneReady && pois.map((poi) => (
                         <a-entity
                             key={poi.id}
                             gps-entity-place={`latitude: ${poi.lat}; longitude: ${poi.lon}`}
@@ -140,7 +147,7 @@ export default function Navigation() {
                                 color="#FF0000"
                                 position="0 0 0"
                                 scale="1 1 1"
-                            ></a-box>
+                            />
                             <a-text
                                 value={`${poi.name}\n(${(poi.lat - userLocation.lat).toFixed(6)}, ${(poi.lon - userLocation.lon).toFixed(6)})`}
                                 look-at="[gps-camera]"
@@ -148,19 +155,24 @@ export default function Navigation() {
                                 align="center"
                                 position="0 1.5 0"
                                 color="#FFFFFF"
-                            ></a-text>
+                            />
                         </a-entity>
                     ))}
                 </a-scene>
             </div>
-            {/* print all the pois with their name and coordinates */}
-            {pois.map((poi) => (
-                <div key={poi.id}>
-                    {poi.name}
-                    {poi.lat}
-                    {poi.lon}
+            
+            <div className="fixed bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white p-4">
+                <h3 className="text-lg font-bold mb-2">Available Locations:</h3>
+                <div className="grid grid-cols-2 gap-2">
+                    {pois.map((poi) => (
+                        <div key={poi.id} className="text-sm">
+                            <strong>{poi.name}</strong>
+                            <div>Lat: {poi.lat.toFixed(6)}</div>
+                            <div>Lon: {poi.lon.toFixed(6)}</div>
+                        </div>
+                    ))}
                 </div>
-            ))}
+            </div>
         </>
     );
 }
