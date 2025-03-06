@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Script from 'next/script';
 
 export default function Navigation() {
@@ -8,6 +8,8 @@ export default function Navigation() {
     const [userLocation, setUserLocation] = useState(null);
     const [pois, setPois] = useState([]);
     const [isSceneReady, setIsSceneReady] = useState(false);
+    const [isSceneLoading, setIsSceneLoading] = useState(true);
+    const sceneRef = useRef(null);
 
     // Function to calculate offset coordinates
     const calculateOffsetCoordinates = (baseLat, baseLon, offsetMeters) => {
@@ -89,9 +91,43 @@ export default function Navigation() {
     }, []);
 
     // Handle A-Frame scene initialization
-    const handleSceneLoaded = () => {
-        setIsSceneReady(true);
-    };
+    useEffect(() => {
+        if (!isLoading && sceneRef.current) {
+            const scene = sceneRef.current;
+
+            const handleSceneLoaded = () => {
+                console.log("Scene loaded successfully");
+                setIsSceneReady(true);
+                setIsSceneLoading(false);
+            };
+
+            const handleSceneError = (error) => {
+                console.error("Scene loading error:", error);
+                setError("Failed to initialize AR scene. Please refresh the page.");
+                setIsSceneLoading(false);
+            };
+
+            // Add event listeners
+            scene.addEventListener('loaded', handleSceneLoaded);
+            scene.addEventListener('error', handleSceneError);
+
+            // Fallback timeout after 10 seconds
+            const timeoutId = setTimeout(() => {
+                if (!isSceneReady) {
+                    console.log("Scene load timeout - forcing ready state");
+                    setIsSceneReady(true);
+                    setIsSceneLoading(false);
+                }
+            }, 10000);
+
+            // Cleanup
+            return () => {
+                scene.removeEventListener('loaded', handleSceneLoaded);
+                scene.removeEventListener('error', handleSceneError);
+                clearTimeout(timeoutId);
+            };
+        }
+    }, [isLoading, isSceneReady]);
 
     if (isLoading) {
         return (
@@ -118,17 +154,30 @@ export default function Navigation() {
             <Script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js" strategy="beforeInteractive" />
             
             <div style={{ height: '100vh', width: '100vw', position: 'relative' }}>
+                {/* Scene Loading Overlay */}
+                {isSceneLoading && (
+                    <div className="absolute inset-0 bg-black bg-opacity-70 z-20 flex items-center justify-center">
+                        <div className="text-white text-center">
+                            <div className="mb-4 text-xl">Initializing AR Scene...</div>
+                            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white mx-auto"></div>
+                            <div className="mt-4 text-sm text-gray-300">Please wait while we prepare the AR experience</div>
+                            <div className="mt-2 text-xs text-gray-400">This may take a few seconds</div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Location Display */}
                 <div className="absolute top-0 left-0 z-10 bg-black bg-opacity-50 text-white p-2 m-2 rounded">
                     Your Location: {userLocation?.lat.toFixed(6)}, {userLocation?.lon.toFixed(6)}
                 </div>
                 
                 <a-scene
+                    ref={sceneRef}
                     embedded
                     arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
                     vr-mode-ui="enabled: false"
                     renderer="logarithmicDepthBuffer: true;"
                     inspector="url: https://cdn.jsdelivr.net/gh/aframevr/aframe-inspector@master/dist/aframe-inspector.min.js"
-                    onLoad={handleSceneLoaded}
                 >
                     <a-camera
                         gps-camera="minDistance: 1; maxDistance: 100000"
