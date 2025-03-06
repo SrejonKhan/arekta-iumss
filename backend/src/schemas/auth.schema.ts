@@ -15,6 +15,8 @@ const signUpSchema = z
     }),
     username: z.string().min(3, { message: "Username must be 3 or more characters long." }),
     displayName: z.string().min(3, { message: "Display Name must be 3 or more characters long." }).optional(),
+    currentSemester: z.string().min(1).optional(),
+    department: z.string().min(1).optional(),
   })
   .openapi({
     description: "Email-Pass Signup payload Schema",

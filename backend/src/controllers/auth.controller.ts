@@ -149,4 +149,25 @@ const googleOAuth2SignIn = async (req: Request, res: Response, next: NextFunctio
   }
 };
 
-export { signIn, signUp, whoami, changePassword, redeemChangePassword, refreshAccessToken, googleOAuth2SignIn };
+// create a new controller create user from admin panel
+const createUser = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const payload = signUpSchema.parse(req.body);
+    const { email, password, username, displayName, currentSemester, department } = payload;
+    const { user, token } = await handleUserSignUp(email, password, username, displayName, currentSemester, department);
+
+    logger.info(`New user created. UserID: ${user.id}.`);
+
+    const body = {
+      message: "Successfully signed up!",
+      user,
+      token,
+    };
+    sendToExchange("exchange.mail", "user", user);
+    res.status(httpStatus.OK).send(body);
+  } catch (ex) {
+    next(ex);
+  }
+};
+
+export { signIn, signUp, whoami, changePassword, redeemChangePassword, refreshAccessToken, googleOAuth2SignIn, createUser };

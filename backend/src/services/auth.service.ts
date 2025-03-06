@@ -39,7 +39,14 @@ const handleUserSignIn = async (email: string, password: string) => {
   };
 };
 
-const handleUserSignUp = async (email: string, password: string, username: string, displayName: string) => {
+const handleUserSignUp = async (
+  email: string,
+  password: string,
+  username: string,
+  displayName: string,
+  currentSemester?: string,
+  department?: string
+) => {
   const userWithEmail = await prisma.user.findUnique({
     where: { email: email },
   });
@@ -67,11 +74,22 @@ const handleUserSignUp = async (email: string, password: string, username: strin
     },
   });
 
+  const userProfile = await prisma.userProfile.create({
+    data: {
+      user: { connect: { id: user.id } },
+      currentSemester: currentSemester,
+      tenureStart: new Date(),
+      tenureEnd: new Date(),
+      department: department,
+    },
+  });
+
   const accessToken = generateAccessToken(user);
   const refreshToken = generateRefreshToken(user);
 
   return {
     user: excludeFromObject(user, ["passwordHash"]),
+    userProfile,
     token: {
       accessToken,
       refreshToken,
