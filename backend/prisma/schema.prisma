@@ -20,7 +20,7 @@ model User {
   username               String                  @unique
   displayName            String?
   passwordHash           String
-  role                   Role                    @default(USER)
+  role                   Role                    @default(STUDENT)
   authType               AuthType                @default(EMAILPASS)
   userProfile            UserProfile?
   clubMemberInfo         ClubMemberInfo?
@@ -28,10 +28,12 @@ model User {
 }
 
 enum Role {
-  USER
   ADMIN
+  STUDENT
   FACULTY
-  MEMBER
+  TRANSPORT
+  CAFETERIA
+  CLUB
 }
 
 enum AuthType {

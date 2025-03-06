@@ -1,6 +1,7 @@
 import express from "express";
 import {
   changePassword,
+  createUser,
   googleOAuth2SignIn,
   redeemChangePassword,
   refreshAccessToken,
@@ -20,5 +21,6 @@ authRouter.post("/change-password", changePassword);
 authRouter.post("/redeem-change-password", redeemChangePassword);
 authRouter.post("/refresh", refreshAccessToken);
 authRouter.post("/google-signin", googleOAuth2SignIn);
+authRouter.post("/create-user", requireAuth, hasRole([Role.ADMIN]), createUser);
 
 export default authRouter;
