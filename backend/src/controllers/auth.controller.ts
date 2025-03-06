@@ -153,8 +153,8 @@ const googleOAuth2SignIn = async (req: Request, res: Response, next: NextFunctio
 const createUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const payload = signUpSchema.parse(req.body);
-    const { email, password, username, displayName } = payload;
-    const { user, token } = await handleUserSignUp(email, password, username, displayName);
+    const { email, password, username, displayName, currentSemester, department } = payload;
+    const { user, token } = await handleUserSignUp(email, password, username, displayName, currentSemester, department);
 
     logger.info(`New user created. UserID: ${user.id}.`);
 
