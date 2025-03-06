@@ -156,7 +156,7 @@ const createUser = async (req: Request, res: Response, next: NextFunction) => {
     const { email, password, username, displayName, currentSemester, department } = payload;
     const { user, token } = await handleUserSignUp(email, password, username, displayName, currentSemester, department);
 
-    logger.info(`New user created. UserID: ${user.id}.`);
+    logger.info(`New user created . UserID: ${user.id}.`);
 
     const body = {
       message: "Successfully signed up!",
