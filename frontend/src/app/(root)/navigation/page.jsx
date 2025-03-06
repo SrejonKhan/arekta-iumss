@@ -51,28 +51,52 @@ export default function Navigation() {
     // Modify the checkDeviceCompatibility function
     const checkDeviceCompatibility = async () => {
         try {
-            // First check camera permissions
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            stream.getTracks().forEach(track => track.stop()); // Stop the stream after permission check
+            // First check if we're on a mobile device
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+                navigator.userAgent
+            );
+            
+            if (!isMobile) {
+                throw new Error("Please use a mobile device for AR navigation");
+            }
+
+            // Request location permission first
+            console.log("Requesting location permission...");
+            const locationPermission = await new Promise((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => resolve(position),
+                    (error) => reject(error),
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 0
+                    }
+                );
+            });
+
+            console.log("Location permission granted");
+            const currentLat = locationPermission.coords.latitude;
+            const currentLon = locationPermission.coords.longitude;
+
+            // Then request camera permission
+            console.log("Requesting camera permission...");
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: {
+                    facingMode: 'environment'
+                },
+                audio: false 
+            });
+            stream.getTracks().forEach(track => track.stop());
+            console.log("Camera permission granted");
 
             // Then check device orientation
+            console.log("Checking device orientation...");
             if (!window.DeviceOrientationEvent) {
                 throw new Error("Device orientation not supported");
             }
 
             await requestDeviceOrientationPermission();
-
-            // Request location permission
-            const position = await new Promise((resolve, reject) => {
-                navigator.geolocation.getCurrentPosition(resolve, reject, {
-                    enableHighAccuracy: true,
-                    timeout: 10000,
-                    maximumAge: 0
-                });
-            });
-
-            const currentLat = position.coords.latitude;
-            const currentLon = position.coords.longitude;
+            console.log("Device orientation permission granted");
 
             setUserLocation({
                 lat: currentLat,
@@ -111,12 +135,19 @@ export default function Navigation() {
             setPois(relativePOIs);
             setIsLoading(false);
         } catch (err) {
+            console.error("Device compatibility check failed:", err);
             let errorMessage = err.message;
+            
             if (err.name === 'NotAllowedError') {
-                errorMessage = 'Camera access denied. Please grant camera permissions to use AR features.';
-            } else if (err.code === err.PERMISSION_DENIED) {
-                errorMessage = 'Location access denied. Please grant location permissions to use AR features.';
+                errorMessage = 'Camera access denied. Please grant camera permissions and refresh the page.';
+            } else if (err.code === 1) { // PERMISSION_DENIED for geolocation
+                errorMessage = 'Location access denied. Please grant location permissions and refresh the page.';
+            } else if (err.code === 2) { // POSITION_UNAVAILABLE
+                errorMessage = 'Location unavailable. Please ensure location services are enabled.';
+            } else if (err.code === 3) { // TIMEOUT
+                errorMessage = 'Location request timed out. Please try again.';
             }
+            
             setError(errorMessage);
             setIsLoading(false);
         }
@@ -129,7 +160,7 @@ export default function Navigation() {
 
     // Handle A-Frame scene initialization
     useEffect(() => {
-        if (!isLoading && sceneRef.current) {
+        if (!isLoading && !error && sceneRef.current) {
             const scene = sceneRef.current;
             let isInitialized = false;
 
@@ -142,7 +173,7 @@ export default function Navigation() {
 
             const handleSceneError = (error) => {
                 console.error("Scene loading error:", error);
-                setError("Failed to initialize AR scene. Please refresh the page.");
+                setError("AR scene failed to initialize. Please ensure all permissions are granted and refresh the page.");
                 setIsSceneLoading(false);
             };
 
@@ -180,7 +211,7 @@ export default function Navigation() {
                 clearTimeout(timeoutId);
             };
         }
-    }, [isLoading]);
+    }, [isLoading, error]);
 
     // Add a permission request button for iOS
     if (!hasDevicePermissions && !error) {
@@ -256,9 +287,9 @@ export default function Navigation() {
                 <a-scene
                     ref={sceneRef}
                     embedded
-                    arjs="sourceType: webcam; debugUIEnabled: true; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
+                    arjs="sourceType: webcam; debugUIEnabled: true; detectionMode: mono_and_matrix; matrixCodeType: 3x3; trackingMethod: best;"
                     vr-mode-ui="enabled: false"
-                    renderer="logarithmicDepthBuffer: true; antialias: true;"
+                    renderer="logarithmicDepthBuffer: true; antialias: true; precision: mediump;"
                     inspector="url: https://cdn.jsdelivr.net/gh/aframevr/aframe-inspector@master/dist/aframe-inspector.min.js"
                     loading="eager"
                     onError={(e) => console.error("A-Scene error:", e)}
