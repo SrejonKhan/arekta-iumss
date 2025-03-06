@@ -9,6 +9,7 @@ export default function Navigation() {
     const [pois, setPois] = useState([]);
     const [isSceneReady, setIsSceneReady] = useState(false);
     const [isSceneLoading, setIsSceneLoading] = useState(true);
+    const [hasDevicePermissions, setHasDevicePermissions] = useState(false);
     const sceneRef = useRef(null);
 
     // Function to calculate offset coordinates
@@ -26,67 +27,103 @@ export default function Navigation() {
         };
     };
 
-    useEffect(() => {
-        // Check if running on mobile and has necessary permissions
-        const checkDeviceCompatibility = async () => {
+    // Add new function to handle device orientation permission
+    const requestDeviceOrientationPermission = async () => {
+        if (typeof DeviceOrientationEvent !== 'undefined' && 
+            typeof DeviceOrientationEvent.requestPermission === 'function') {
             try {
-                // Check for device orientation API
-                if (!window.DeviceOrientationEvent) {
-                    throw new Error("Device orientation not supported");
+                const permission = await DeviceOrientationEvent.requestPermission();
+                if (permission === 'granted') {
+                    setHasDevicePermissions(true);
+                } else {
+                    throw new Error('Device orientation permission denied');
                 }
-
-                // Request location permission
-                const position = await new Promise((resolve, reject) => {
-                    navigator.geolocation.getCurrentPosition(resolve, reject, {
-                        enableHighAccuracy: true
-                    });
-                });
-
-                const currentLat = position.coords.latitude;
-                const currentLon = position.coords.longitude;
-
-                setUserLocation({
-                    lat: currentLat,
-                    lon: currentLon
-                });
-
-                // Define POIs relative to user's location
-                const relativePOIs = [
-                    { 
-                        id: 1, 
-                        name: "Library", 
-                        ...calculateOffsetCoordinates(currentLat, currentLon, { north: 2, east: 2 })
-                    },
-                    { 
-                        id: 2, 
-                        name: "Cafeteria", 
-                        ...calculateOffsetCoordinates(currentLat, currentLon, { north: -20, east: 40 })
-                    },
-                    { 
-                        id: 3, 
-                        name: "Main Hall", 
-                        ...calculateOffsetCoordinates(currentLat, currentLon, { north: 30, east: -25 })
-                    },
-                    { 
-                        id: 4, 
-                        name: "Sports Complex", 
-                        ...calculateOffsetCoordinates(currentLat, currentLon, { north: -40, east: -35 })
-                    },
-                    { 
-                        id: 5, 
-                        name: "Parking", 
-                        ...calculateOffsetCoordinates(currentLat, currentLon, { north: 15, east: 60 })
-                    }
-                ];
-
-                setPois(relativePOIs);
-                setIsLoading(false);
             } catch (err) {
-                setError(err.message);
+                setError('Please grant device orientation permissions to use AR features');
                 setIsLoading(false);
             }
-        };
+        } else {
+            // For non-iOS devices or devices that don't need explicit permission
+            setHasDevicePermissions(true);
+        }
+    };
 
+    // Modify the checkDeviceCompatibility function
+    const checkDeviceCompatibility = async () => {
+        try {
+            // First check camera permissions
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            stream.getTracks().forEach(track => track.stop()); // Stop the stream after permission check
+
+            // Then check device orientation
+            if (!window.DeviceOrientationEvent) {
+                throw new Error("Device orientation not supported");
+            }
+
+            await requestDeviceOrientationPermission();
+
+            // Request location permission
+            const position = await new Promise((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(resolve, reject, {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                });
+            });
+
+            const currentLat = position.coords.latitude;
+            const currentLon = position.coords.longitude;
+
+            setUserLocation({
+                lat: currentLat,
+                lon: currentLon
+            });
+
+            // Define POIs relative to user's location
+            const relativePOIs = [
+                { 
+                    id: 1, 
+                    name: "Library", 
+                    ...calculateOffsetCoordinates(currentLat, currentLon, { north: 2, east: 2 })
+                },
+                { 
+                    id: 2, 
+                    name: "Cafeteria", 
+                    ...calculateOffsetCoordinates(currentLat, currentLon, { north: -20, east: 40 })
+                },
+                { 
+                    id: 3, 
+                    name: "Main Hall", 
+                    ...calculateOffsetCoordinates(currentLat, currentLon, { north: 30, east: -25 })
+                },
+                { 
+                    id: 4, 
+                    name: "Sports Complex", 
+                    ...calculateOffsetCoordinates(currentLat, currentLon, { north: -40, east: -35 })
+                },
+                { 
+                    id: 5, 
+                    name: "Parking", 
+                    ...calculateOffsetCoordinates(currentLat, currentLon, { north: 15, east: 60 })
+                }
+            ];
+
+            setPois(relativePOIs);
+            setIsLoading(false);
+        } catch (err) {
+            let errorMessage = err.message;
+            if (err.name === 'NotAllowedError') {
+                errorMessage = 'Camera access denied. Please grant camera permissions to use AR features.';
+            } else if (err.code === err.PERMISSION_DENIED) {
+                errorMessage = 'Location access denied. Please grant location permissions to use AR features.';
+            }
+            setError(errorMessage);
+            setIsLoading(false);
+        }
+    };
+
+    // Modify the useEffect to handle permissions
+    useEffect(() => {
         checkDeviceCompatibility();
     }, []);
 
@@ -94,9 +131,11 @@ export default function Navigation() {
     useEffect(() => {
         if (!isLoading && sceneRef.current) {
             const scene = sceneRef.current;
+            let isInitialized = false;
 
             const handleSceneLoaded = () => {
                 console.log("Scene loaded successfully");
+                isInitialized = true;
                 setIsSceneReady(true);
                 setIsSceneLoading(false);
             };
@@ -107,18 +146,32 @@ export default function Navigation() {
                 setIsSceneLoading(false);
             };
 
+            // Check if scene is already loaded
+            if (scene.hasLoaded) {
+                console.log("Scene was already loaded");
+                handleSceneLoaded();
+                return;
+            }
+
             // Add event listeners
             scene.addEventListener('loaded', handleSceneLoaded);
             scene.addEventListener('error', handleSceneError);
 
-            // Fallback timeout after 10 seconds
+            // More aggressive timeout handling
             const timeoutId = setTimeout(() => {
-                if (!isSceneReady) {
-                    console.log("Scene load timeout - forcing ready state");
-                    setIsSceneReady(true);
-                    setIsSceneLoading(false);
+                if (!isInitialized) {
+                    console.log("Scene load timeout - checking scene state");
+                    
+                    // Check if scene appears to be working despite not firing the loaded event
+                    if (scene.hasLoaded || scene.renderStarted) {
+                        console.log("Scene appears functional, forcing ready state");
+                        handleSceneLoaded();
+                    } else {
+                        console.error("Scene failed to initialize properly");
+                        handleSceneError(new Error("Scene initialization timeout"));
+                    }
                 }
-            }, 10000);
+            }, 5000); // Reduced timeout to 5 seconds
 
             // Cleanup
             return () => {
@@ -127,7 +180,26 @@ export default function Navigation() {
                 clearTimeout(timeoutId);
             };
         }
-    }, [isLoading, isSceneReady]);
+    }, [isLoading]);
+
+    // Add a permission request button for iOS
+    if (!hasDevicePermissions && !error) {
+        return (
+            <div className="flex items-center justify-center h-screen">
+                <div className="text-center">
+                    <button 
+                        onClick={requestDeviceOrientationPermission}
+                        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                    >
+                        Enable AR Features
+                    </button>
+                    <div className="mt-4 text-sm text-gray-500">
+                        Please click to enable device orientation for AR
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     if (isLoading) {
         return (
@@ -150,8 +222,18 @@ export default function Navigation() {
 
     return (
         <>
-            <Script src="https://aframe.io/releases/1.4.0/aframe.min.js" strategy="beforeInteractive" />
-            <Script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js" strategy="beforeInteractive" />
+            <Script 
+                src="https://aframe.io/releases/1.4.0/aframe.min.js" 
+                strategy="beforeInteractive"
+                onLoad={() => console.log("A-Frame core loaded")}
+                onError={(e) => console.error("A-Frame failed to load:", e)}
+            />
+            <Script 
+                src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js" 
+                strategy="beforeInteractive"
+                onLoad={() => console.log("AR.js loaded")}
+                onError={(e) => console.error("AR.js failed to load:", e)}
+            />
             
             <div style={{ height: '100vh', width: '100vw', position: 'relative' }}>
                 {/* Scene Loading Overlay */}
@@ -174,15 +256,19 @@ export default function Navigation() {
                 <a-scene
                     ref={sceneRef}
                     embedded
-                    arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
+                    arjs="sourceType: webcam; debugUIEnabled: true; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
                     vr-mode-ui="enabled: false"
-                    renderer="logarithmicDepthBuffer: true;"
+                    renderer="logarithmicDepthBuffer: true; antialias: true;"
                     inspector="url: https://cdn.jsdelivr.net/gh/aframevr/aframe-inspector@master/dist/aframe-inspector.min.js"
+                    loading="eager"
+                    onError={(e) => console.error("A-Scene error:", e)}
                 >
                     <a-camera
                         gps-camera="minDistance: 1; maxDistance: 100000"
                         rotation-reader
                         position="0 1.6 0"
+                        look-controls="enabled: true"
+                        arjs-look-controls="smoothingFactor: 0.1"
                     />
                     
                     {isSceneReady && pois.map((poi) => (
