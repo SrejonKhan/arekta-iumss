@@ -1,34 +1,28 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import {
-  Home,
-  Coffee,
-  Bus,
-  Calendar,
-  Map,
-  BookOpen,
-} from "lucide-react"
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Home, Coffee, Bus, Calendar, Map, BookOpen } from "lucide-react";
 
 const navigationItems = [
-  { name: 'Dashboard', path: '/', icon: Home },
-  { 
-    name: 'Academic',
+  { name: "Dashboard", path: "/", icon: Home },
+  {
+    name: "Academic",
     icon: BookOpen,
     children: [
-      { name: 'Class Schedule', path: '/schedule', icon: Calendar },
-      { name: 'Faculty', path: '/faculty', icon: BookOpen },
-    ]
+      { name: "Class Schedule", path: "/schedule", icon: Calendar },
+      { name: "Faculty", path: "/faculty", icon: BookOpen },
+    ],
   },
-  { name: 'Cafeteria', path: '/cafeteria', icon: Coffee },
-  { name: 'Transport', path: '/transport', icon: Bus },
-  { name: 'Events', path: '/events', icon: Calendar },
-  { name: 'Campus Map', path: '/navigation', icon: Map },
-]
+  { name: "Cafeteria", path: "/cafeteria", icon: Coffee },
+  { name: "Transport", path: "/transport", icon: Bus },
+  { name: "Events", path: "/events", icon: Calendar },
+  { name: "Campus Map", path: "/navigation", icon: Map },
+  { name: "AR nav", path: "/AR-nav", icon: Map },
+];
 
 const Navigation = ({ isCollapsed }) => {
-  const pathname = usePathname()
+  const pathname = usePathname();
 
   return (
     <nav className="space-y-1 px-2">
@@ -36,9 +30,11 @@ const Navigation = ({ isCollapsed }) => {
         <div key={item.name}>
           {item.children ? (
             <div className="space-y-1">
-              <div className={`flex items-center px-3 py-2 text-gray-600 ${
-                isCollapsed ? "justify-center" : ""
-              }`}>
+              <div
+                className={`flex items-center px-3 py-2 text-gray-600 ${
+                  isCollapsed ? "justify-center" : ""
+                }`}
+              >
                 <item.icon className="h-5 w-5" />
                 {!isCollapsed && <span className="ml-3">{item.name}</span>}
               </div>
@@ -79,7 +75,7 @@ const Navigation = ({ isCollapsed }) => {
         </div>
       ))}
     </nav>
-  )
-}
+  );
+};
 
-export default Navigation 
+export default Navigation;

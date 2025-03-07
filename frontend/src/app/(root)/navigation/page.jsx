@@ -227,54 +227,64 @@ const NavigationPage = () => {
 
         {/* Main content area */}
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          <div className="h-[70vh]">
-            {viewMode === "map" ? (
-              <MapWithPOIs
-                userLocation={location}
-                pois={pois}
-                selectedPoi={selectedPoi}
-                onPoiSelect={handlePoiSelect}
-              />
-            ) : selectedPoi ? (
-              <ARView
-                userLocation={location}
-                destination={selectedPoi}
-                onBack={() => {
-                  setViewMode("map");
-                  setIsARInitialized(false);
-                }}
-                isInitialized={isARInitialized}
-              />
-            ) : (
-              <div className="h-full flex items-center justify-center bg-gray-50">
-                <div className="text-center text-gray-600 p-4">
-                  <svg
-                    className="w-12 h-12 mx-auto mb-4 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M8 16l2.879-2.879m0 0a3 3 0 104.243-4.242 3 3 0 00-4.243 4.242zM21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                  <p className="text-lg font-medium">
-                    Select a POI from the map first
-                  </p>
-                  <p className="text-sm text-gray-500 mt-2">
-                    Return to map view to choose a destination
-                  </p>
-                </div>
-              </div>
-            )}
+          <div className="h-[50vh]">
+            <MapWithPOIs
+              userLocation={location}
+              pois={pois}
+              selectedPoi={selectedPoi}
+              onPoiSelect={handlePoiSelect}
+            />
           </div>
         </div>
 
-        {/* POI information panel */}
+        {/* POI List */}
+        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {pois.map((poi) => (
+            <div
+              key={poi.id}
+              onClick={() => handlePoiSelect(poi)}
+              className={`${
+                selectedPoi?.id === poi.id
+                  ? "border-primary bg-primary/5"
+                  : "border-gray-200 hover:border-primary/50"
+              } cursor-pointer border-2 rounded-xl p-4 transition-all duration-200`}
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="font-semibold text-lg text-gray-800">
+                    {poi.name}
+                  </h3>
+                  <p className="text-gray-600 text-sm mt-1">
+                    {poi.description}
+                  </p>
+                </div>
+                <div className="bg-white shadow-sm border border-gray-100 px-3 py-1.5 rounded-lg">
+                  <p className="text-primary font-medium text-sm">
+                    {(poi.distance / 1000).toFixed(2)} km
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center mt-3 text-sm text-gray-500">
+                <svg
+                  className="w-4 h-4 mr-1"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                  />
+                </svg>
+                {poi.category}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Selected POI Detail Panel */}
         {selectedPoi && (
           <div className="mt-6 bg-white rounded-xl shadow-lg border border-gray-100 p-6">
             <div className="flex items-start justify-between">
@@ -283,10 +293,26 @@ const NavigationPage = () => {
                   {selectedPoi.name}
                 </h2>
                 <p className="text-gray-600 mt-2">{selectedPoi.description}</p>
+                <div className="flex items-center mt-4 text-gray-500">
+                  <svg
+                    className="w-5 h-5 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                    />
+                  </svg>
+                  {selectedPoi.category}
+                </div>
               </div>
               <div className="bg-primary/10 px-4 py-2 rounded-lg">
                 <p className="text-primary font-semibold">
-                  {selectedPoi.distance.toFixed(2)} km
+                  {(selectedPoi.distance / 1000).toFixed(2)} km
                 </p>
               </div>
             </div>
