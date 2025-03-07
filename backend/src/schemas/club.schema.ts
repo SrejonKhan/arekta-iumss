@@ -48,6 +48,13 @@ export const updateClubEventSchema = z.object({
     }),
 });
 
+// Club Event User Schema
+export const joinClubEventSchema = z.object({
+    params: z.object({
+        eventId: z.string(),
+    }),
+});
+
 // Club Member Management Schemas
 export const addClubMemberSchema = z.object({
     params: z.object({
@@ -67,4 +74,5 @@ export type CreateClubInput = {
 
 export type UpdateClubInput = Partial<CreateClubInput>;
 export type CreateClubEventInput = z.infer<typeof createClubEventSchema>['body'];
-export type UpdateClubEventInput = z.infer<typeof updateClubEventSchema>['body']; 
+export type UpdateClubEventInput = z.infer<typeof updateClubEventSchema>['body'];
+export type JoinClubEventInput = z.infer<typeof joinClubEventSchema>['params']; 
