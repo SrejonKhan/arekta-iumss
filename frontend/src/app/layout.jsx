@@ -22,7 +22,7 @@ export default function RootLayout({ children }) {
           </main>
         </div>
         <Toaster position="top-center" />
-        <Chatbot />
+        {/* <Chatbot /> */}
       </body>
     </html>
   );
