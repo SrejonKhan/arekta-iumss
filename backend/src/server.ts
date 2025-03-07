@@ -13,7 +13,7 @@ import { globalErrorHandler, notFoundHandler } from "./middlewares/error.middlew
 import docsRouter from "./routers/v1/docs.router";
 import clubRouter from "./routers/v1/club.router";
 import cafeteriaRouter from "./routers/v1/cafeteria.router";
-import emergenccyRouter from "./routers/v1/emergency.router";
+// import emergenccyRouter from "./routers/v1/emergency.router";
 import { serve } from "swagger-ui-express";
 
 const server = express();
@@ -32,7 +32,7 @@ server.use("/api/v1/auth", authRouter);
 server.use("/docs", docsRouter);
 server.use("/api/v1/clubs", clubRouter);
 server.use("/api/v1/cafeteria", cafeteriaRouter);
-server.use("/api/v1/emergency", emergenccyRouter);
+// server.use("/api/v1/emergency", emergenccyRouter);
 
 server.get("/", (req, res) => {
   return res.status(httpStatus.OK).send({ message: "The Server is running successfully!" });
