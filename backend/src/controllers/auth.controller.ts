@@ -11,6 +11,7 @@ import {
   exchangeAccessToken,
   findUserByEmail,
   handleChangePassword,
+  handleGetUserClubRecommendations,
   handleGetUsersByRole,
   handleGoogleSignIn,
   handleRedeemChangePassword,
@@ -229,6 +230,22 @@ const getUsersByRole = async (req: Request, res: Response, next: NextFunction) =
   }
 };
 
+const getUserClubRecommendations = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { userId } = req.query;
+
+    const recommendations = await handleGetUserClubRecommendations(userId as string);
+
+    const body = {
+      message: "Successfully fetched club recommendations!",
+      recommendations,
+    };
+    res.status(httpStatus.OK).send(body);
+  } catch (ex) {
+    next(ex);
+  }
+};
+
 export {
   signIn,
   signUp,
@@ -239,4 +256,5 @@ export {
   googleOAuth2SignIn,
   createUser,
   getUsersByRole,
+  getUserClubRecommendations,
 };

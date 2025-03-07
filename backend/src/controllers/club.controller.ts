@@ -143,4 +143,59 @@ export async function getClubMembersHandler(req: Request, res: Response) {
     } catch (error: any) {
         return res.status(500).json({ message: error.message });
     }
+}
+
+// Club Event User Controllers
+export async function joinClubEventHandler(req: Request, res: Response) {
+    try {
+        if (!req.user) {
+            return res.status(401).json({ message: 'Authentication required' });
+        }
+
+        const { eventId } = req.params;
+
+        // Check if user already joined
+        const isJoined = await clubService.isUserJoinedEvent(req.user.id, eventId);
+        if (isJoined) {
+            return res.status(400).json({ message: 'You have already joined this event' });
+        }
+
+        const participation = await clubService.joinClubEvent(req.user.id, eventId);
+        return res.status(201).json(participation);
+    } catch (error: any) {
+        if (error.code === 'P2025') {
+            return res.status(404).json({ message: 'Event not found' });
+        }
+        if (error.code === 'P2002') {
+            return res.status(409).json({ message: 'Already joined this event' });
+        }
+        return res.status(500).json({ message: error.message });
+    }
+}
+
+export async function leaveClubEventHandler(req: Request, res: Response) {
+    try {
+        if (!req.user) {
+            return res.status(401).json({ message: 'Authentication required' });
+        }
+
+        const { eventId } = req.params;
+        await clubService.leaveClubEvent(req.user.id, eventId);
+        return res.status(204).send();
+    } catch (error: any) {
+        if (error.code === 'P2025') {
+            return res.status(404).json({ message: 'Event participation not found' });
+        }
+        return res.status(500).json({ message: error.message });
+    }
+}
+
+export async function getEventParticipantsHandler(req: Request, res: Response) {
+    try {
+        const { eventId } = req.params;
+        const participants = await clubService.getEventParticipants(eventId);
+        return res.status(200).json(participants);
+    } catch (error: any) {
+        return res.status(500).json({ message: error.message });
+    }
 } 

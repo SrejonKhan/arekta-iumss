@@ -323,6 +323,77 @@ const handleGetUsersByRole = async (role: Role) => {
   });
 };
 
+const handleGetUserClubRecommendations = async (userId: string) => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: {
+      userProfile: true,
+      ClubEventUser: true,
+    },
+  });
+
+  if (!user) {
+    throw new ApiError(400, "User not found!");
+  }
+
+  const joinedEventsId = user.ClubEventUser.map((event) => event.clubEventId);
+  const joinedEvents = await prisma.clubEvent.findMany({
+    where: {
+      id: {
+        in: joinedEventsId,
+      },
+    },
+  });
+
+  const userDepartment = user.userProfile.department;
+  const userCurrentSemester = user.userProfile.currentSemester;
+  const userLevelTerm = user.userProfile.levelTerm;
+  const userCurrentCgpa = user.userProfile.currentCgpa;
+  const userRequiredCredit = user.userProfile.requiredCredit;
+  const userCompletedCredit = user.userProfile.completedCredit;
+  const userOngoingCredit = user.userProfile.ongoingCredit;
+  const userProfileIntro = user.userProfile.profileIntro;
+  const allClubs = await prisma.club.findMany();
+
+  const aiRecommendations = await axios.post(
+    "https://api.x.ai/v1/chat/completions",
+    {
+      messages: [
+        {
+          role: "system",
+          content: `Here is a student. \
+            Department: ${userDepartment}, 
+            Semester: ${userCurrentSemester}, 
+            Level Term: ${userLevelTerm}, 
+            CGPA: ${userCurrentCgpa}, 
+            Required Credit: ${userRequiredCredit}, 
+            Completed Credit: ${userCompletedCredit}, 
+            Ongoing Credit: ${userOngoingCredit}, 
+            Profile Intro: ${userProfileIntro}.
+            Has joined ${joinedEvents.length} events. 
+            Events infos are: ${joinedEvents.map((event) => event.eventInfo).join(", ")}
+            Here are the clubs: ${allClubs.map((club) => `${club.id} - ${club.clubName} - ${club.clubGoals} - ${club.clubInfo}`).join(", ")}. 
+            What clubs should we recommend to this student?
+            The response should be a list of clubs.`,
+        },
+      ],
+      model: "grok-2-latest",
+      stream: false,
+      temperature: 0,
+    },
+    {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${config.XAI_API_KEY}`,
+      },
+    }
+  );
+
+  const recommendedClubs = aiRecommendations.data.choices[0].message;
+
+  return recommendedClubs;
+};
+
 export {
   handleUserSignIn,
   handleUserSignUp,
@@ -333,4 +404,5 @@ export {
   exchangeAccessToken,
   handleGoogleSignIn,
   handleGetUsersByRole,
+  handleGetUserClubRecommendations,
 };

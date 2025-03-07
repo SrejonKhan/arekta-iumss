@@ -174,4 +174,64 @@ export async function getClubMembers(clubId: string) {
             },
         },
     });
+}
+
+// Club Event User Services
+export async function joinClubEvent(userId: string, eventId: string) {
+    return prisma.clubEventUser.create({
+        data: {
+            userId,
+            clubEventId: eventId,
+        },
+        include: {
+            user: {
+                select: {
+                    id: true,
+                    username: true,
+                    displayName: true,
+                },
+            },
+            clubEvent: true,
+        },
+    });
+}
+
+export async function leaveClubEvent(userId: string, eventId: string) {
+    return prisma.clubEventUser.delete({
+        where: {
+            userId_clubEventId: {
+                userId,
+                clubEventId: eventId,
+            },
+        },
+    });
+}
+
+export async function getEventParticipants(eventId: string) {
+    return prisma.clubEventUser.findMany({
+        where: {
+            clubEventId: eventId,
+        },
+        include: {
+            user: {
+                select: {
+                    id: true,
+                    username: true,
+                    displayName: true,
+                },
+            },
+        },
+    });
+}
+
+export async function isUserJoinedEvent(userId: string, eventId: string) {
+    const participation = await prisma.clubEventUser.findUnique({
+        where: {
+            userId_clubEventId: {
+                userId,
+                clubEventId: eventId,
+            },
+        },
+    });
+    return !!participation;
 } 
