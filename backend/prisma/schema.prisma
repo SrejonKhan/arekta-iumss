@@ -146,19 +146,19 @@ model ClubEvent {
   clubId      String   @db.ObjectId
 }
 
-model Caferia {
+model Cafeteria {
   id          String @id @default(auto()) @map("_id") @db.ObjectId
-  caferiaName String
-  caferiaInfo String
-  caferiaMenu CaferiaMenu[]
+  CafeteriaName String
+  CafeteriaInfo String
+  CafeteriaMenu CafeteriaMenu[]
 }
 
-model CaferiaMenu {
+model CafeteriaMenu {
   id          String @id @default(auto()) @map("_id") @db.ObjectId
   menuName    String
   foods Food[]
-  caferia     Caferia @relation(fields: [caferiaId], references: [id])
-  caferiaId   String  @db.ObjectId
+  Cafeteria     Cafeteria @relation(fields: [CafeteriaId], references: [id])
+  CafeteriaId   String  @db.ObjectId
 }
 
 model Food {
@@ -171,8 +171,8 @@ model Food {
   protein     Float @default(0)
   fat         Float @default(0)
   carbs       Float @default(0)
-  caferiaMenu CaferiaMenu @relation(fields: [caferiaMenuId], references: [id])
-  caferiaMenuId String @db.ObjectId
+  CafeteriaMenu CafeteriaMenu @relation(fields: [CafeteriaMenuId], references: [id])
+  CafeteriaMenuId String @db.ObjectId
 }
 
 enum FoodType {
