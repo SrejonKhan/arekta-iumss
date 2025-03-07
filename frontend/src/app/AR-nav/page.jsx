@@ -13,45 +13,40 @@ const ARNavigation = () => {
 
   // Check if device is mobile and has necessary capabilities
   useEffect(() => {
-    const checkDeviceCapabilities = () => {
-      const isMobileDevice =
-        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-          navigator.userAgent
-        );
-      setIsMobile(isMobileDevice);
+    const checkDeviceCapabilities = async () => {
+      try {
+        const isMobileDevice =
+          /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+            navigator.userAgent
+          );
+        setIsMobile(isMobileDevice);
 
-      if (!isMobileDevice) {
-        setError("Please use a mobile device to access AR navigation.");
-        return;
+        if (!isMobileDevice) {
+          setError("Please use a mobile device to access AR navigation.");
+          return;
+        }
+
+        // Check for device orientation and geolocation support
+        if (!window.DeviceOrientationEvent) {
+          setError("Your device doesn't support AR features.");
+          return;
+        }
+
+        // Get destination from localStorage
+        const storedDestination = localStorage.getItem("currentDestination");
+        if (!storedDestination) {
+          setError(
+            "No destination selected. Please select a destination from the map."
+          );
+          return;
+        }
+
+        const parsedDestination = JSON.parse(storedDestination);
+        setDestination(parsedDestination);
+        setIsLoading(false);
+      } catch (err) {
+        setError(err.message || "Failed to initialize AR navigation");
       }
-
-      // Check for device orientation and geolocation support
-      if (!window.DeviceOrientationEvent) {
-        setError("Your device doesn't support AR features.");
-        return;
-      }
-
-      // Get destination coordinates from URL or localStorage
-      const params = new URLSearchParams(window.location.search);
-      const destData = localStorage.getItem("arDestination");
-
-      if (params.get("poi")) {
-        const destination = {
-          id: params.get("poi"),
-          name: "Campus Location",
-          latitude: 23.8759, // Replace with actual coordinates
-          longitude: 90.3795,
-        };
-        setDestination(destination);
-        localStorage.setItem("arDestination", JSON.stringify(destination));
-      } else if (destData) {
-        setDestination(JSON.parse(destData));
-      } else {
-        setError("No destination specified.");
-        return;
-      }
-
-      setIsLoading(false);
     };
 
     checkDeviceCapabilities();
@@ -69,6 +64,11 @@ const ARNavigation = () => {
         },
 
         init: function () {
+          this.setupMarker();
+          this.startPositionUpdates();
+        },
+
+        setupMarker: function () {
           // Set up the marker
           this.el.setAttribute("geometry", {
             primitive: "cylinder",
@@ -89,7 +89,9 @@ const ARNavigation = () => {
             loop: true,
             to: "0 0.2 0",
           });
+        },
 
+        startPositionUpdates: function () {
           // Update position based on GPS
           this.updatePosition();
           this.positionInterval = setInterval(
