@@ -7,6 +7,7 @@ import { DataTable } from "@/components/ui/data-table"
 import { Button } from "@/components/ui/button"
 import { PlusCircle } from "lucide-react"
 import { toast } from "sonner"
+import { getAllStudents } from "@/services/studentService"
 
 // Define status directly in the file for now
 const UserStatus = {
@@ -16,7 +17,7 @@ const UserStatus = {
 
 const columns = [
   {
-    accessorKey: "studentId",
+    accessorKey: "username",
     header: "Student ID"
   },
   {
@@ -28,13 +29,22 @@ const columns = [
     header: "Email"
   },
   {
-    accessorKey: "department",
+    accessorKey: "userProfile.department",
     header: "Department"
   },
   {
-    accessorKey: "semester",
-    header: "Semester",
-    cell: ({ row }) => `${row.original.semester}${getSemesterSuffix(row.original.semester)}`
+    accessorKey: "userProfile.currentSemester",
+    header: "Semester"
+  },
+  {
+    accessorKey: "userProfile.currentCgpa",
+    header: "CGPA",
+    cell: ({ row }) => row.original.userProfile?.currentCgpa || 'N/A'
+  },
+  {
+    accessorKey: "userProfile.completedCredit",
+    header: "Completed Credits",
+    cell: ({ row }) => row.original.userProfile?.completedCredit || '0'
   },
   {
     accessorKey: "status",
@@ -49,39 +59,21 @@ const columns = [
   }
 ]
 
-function getSemesterSuffix(semester) {
-  if (semester === 1) return 'st'
-  if (semester === 2) return 'nd'
-  if (semester === 3) return 'rd'
-  return 'th'
-}
-
 export default function StudentsPage() {
   const router = useRouter()
   const [students, setStudents] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Simulating data fetch for now
     const fetchStudents = async () => {
       try {
         setLoading(true)
-        // Temporary mock data
-        const mockStudents = [
-          {
-            studentId: "2024001",
-            displayName: "John Doe",
-            email: "john@example.com",
-            department: "Computer Science",
-            semester: 1,
-            status: UserStatus.ACTIVE
-          },
-          // Add more mock data as needed
-        ]
-        
-        setStudents(mockStudents)
+        const data = await getAllStudents()
+        // Filter only student users from the response
+        const studentUsers = data.filter(user => user.role === 'STUDENT')
+        setStudents(studentUsers)
       } catch (error) {
-        toast.error("Failed to fetch students")
+        toast.error(error.message || "Failed to fetch students")
       } finally {
         setLoading(false)
       }
@@ -107,6 +99,20 @@ export default function StudentsPage() {
         columns={columns}
         data={students}
         isLoading={loading}
+        pagination
+        searchable
+        filterableColumns={[
+          {
+            id: 'userProfile.department',
+            title: 'Department',
+            options: [
+              { label: 'CSE', value: 'CSE' },
+              { label: 'EEE', value: 'EEE' },
+              { label: 'ME', value: 'ME' },
+              { label: 'CE', value: 'CE' },
+            ]
+          }
+        ]}
       />
     </div>
   )

@@ -2,6 +2,7 @@
 
 import { Send } from 'lucide-react'
 import { useState } from 'react'
+import VoiceInput from './VoiceInput'
 
 const ChatInput = ({ onSend, isLoading }) => {
   const [message, setMessage] = useState('')
@@ -14,8 +15,16 @@ const ChatInput = ({ onSend, isLoading }) => {
     }
   }
 
+  const handleVoiceTranscript = (transcript) => {
+    setMessage(prev => prev + transcript)
+  }
+
   return (
     <form onSubmit={handleSubmit} className="flex items-center gap-2 border-t p-4">
+      <VoiceInput 
+        onTranscript={handleVoiceTranscript}
+        disabled={isLoading}
+      />
       <input
         type="text"
         value={message}

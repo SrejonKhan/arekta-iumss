@@ -1,0 +1,1 @@
+DATABASE_URL="mongodb://mongodb1:27017,mongodb2:27018,mongodb3:27019/blueprint_application_dev?replicaSet=rs0"
