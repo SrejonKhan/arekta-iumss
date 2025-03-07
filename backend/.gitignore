@@ -142,3 +142,5 @@ docs/api/openapi-docs.yml
 .env.test
 .env.production
 .env.staging
+
+firebase_service_acc.json
