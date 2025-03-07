@@ -1,84 +1,86 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { PageHeader } from "@/components/ui/page-header"
 import { DataTable } from "@/components/ui/data-table"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { PlusCircle, Calendar, Users } from "lucide-react"
+import { toast } from "sonner"
+import { getAllClubs, getClubEvents } from "@/services/clubService"
 
 const columns = [
   {
-    accessorKey: "name",
+    accessorKey: "clubName",
     header: "Club Name"
   },
   {
-    accessorKey: "category",
-    header: "Category"
-  },
-  {
-    accessorKey: "president",
-    header: "President"
-  },
-  {
-    accessorKey: "members",
-    header: "Members"
-  },
-  {
-    accessorKey: "advisor",
-    header: "Faculty Advisor"
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
+    accessorKey: "clubInfo",
+    header: "Description",
     cell: ({ row }) => (
-      <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-        row.original.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-      }`}>
-        {row.original.status}
+      <div className="max-w-xs truncate" title={row.original.clubInfo}>
+        {row.original.clubInfo}
       </div>
     )
-  }
-]
-
-const dummyData = [
-  {
-    name: "Programming Club",
-    category: "Technical",
-    president: "Alex Johnson",
-    members: "45",
-    advisor: "Dr. Robert Wilson",
-    status: "Active",
-    nextEvent: "Code Sprint 2024"
   },
   {
-    name: "Photography Society",
-    category: "Arts",
-    president: "Emma Davis",
-    members: "32",
-    advisor: "Prof. Sarah Lee",
-    status: "Active",
-    nextEvent: "Photo Exhibition"
-  }
-]
-
-const upcomingEvents = [
-  {
-    name: "Code Sprint 2024",
-    club: "Programming Club",
-    date: "March 15, 2024",
-    time: "10:00 AM"
+    accessorKey: "clubGoals",
+    header: "Goals",
+    cell: ({ row }) => (
+      <div className="max-w-xs truncate" title={row.original.clubGoals}>
+        {row.original.clubGoals}
+      </div>
+    )
   },
   {
-    name: "Photo Exhibition",
-    club: "Photography Society",
-    date: "March 20, 2024",
-    time: "2:00 PM"
+    accessorKey: "clubMembers",
+    header: "Members",
+    cell: ({ row }) => row.original.clubMembers?.length || 0
+  },
+  {
+    accessorKey: "clubEvents",
+    header: "Events",
+    cell: ({ row }) => row.original.clubEvents?.length || 0
   }
 ]
 
 export default function ClubsPage() {
-  const [clubs] = useState(dummyData)
+  const router = useRouter()
+  const [clubs, setClubs] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [upcomingEvents, setUpcomingEvents] = useState([])
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true)
+        const clubsData = await getAllClubs()
+        setClubs(clubsData)
+
+        // Fetch upcoming events for each club
+        const allEvents = await Promise.all(
+          clubsData.map(club => getClubEvents(club.id))
+        )
+
+        // Flatten events array and sort by date
+        const sortedEvents = allEvents
+          .flat()
+          .sort((a, b) => new Date(a.eventDate) - new Date(b.eventDate))
+          .slice(0, 5) // Take only the next 5 events
+
+        setUpcomingEvents(sortedEvents)
+      } catch (error) {
+        toast.error(error.message || "Failed to fetch data")
+        setClubs([])
+        setUpcomingEvents([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [])
 
   return (
     <div className="space-y-6">
@@ -86,7 +88,7 @@ export default function ClubsPage() {
         title="Club Management"
         description="Manage student clubs and their activities"
         actions={
-          <Button>
+          <Button onClick={() => router.push("/admin/clubs/add")}>
             <PlusCircle className="mr-2 h-4 w-4" />
             Add Club
           </Button>
@@ -95,10 +97,12 @@ export default function ClubsPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-2">
-          <h2 className="text-lg font-semibold mb-4">All Clubs</h2>
           <DataTable
             columns={columns}
             data={clubs}
+            isLoading={loading}
+            pagination
+            searchable
           />
         </div>
 
@@ -106,15 +110,18 @@ export default function ClubsPage() {
           <Card className="p-6">
             <h3 className="text-lg font-semibold mb-4">Upcoming Events</h3>
             <div className="space-y-4">
-              {upcomingEvents.map((event, index) => (
-                <div key={index} className="flex items-start space-x-4">
+              {upcomingEvents.map((event) => (
+                <div key={event.id} className="flex items-start space-x-4">
                   <div className="p-2 bg-blue-100 rounded-lg">
                     <Calendar className="w-5 h-5 text-blue-600" />
                   </div>
                   <div>
-                    <h4 className="font-medium">{event.name}</h4>
-                    <p className="text-sm text-gray-500">{event.club}</p>
-                    <p className="text-sm text-gray-500">{event.date} at {event.time}</p>
+                    <h4 className="font-medium">{event.eventName}</h4>
+                    <p className="text-sm text-gray-500">{event.eventVenue}</p>
+                    <p className="text-sm text-gray-500">
+                      {new Date(event.eventDate).toLocaleDateString()} at{' '}
+                      {new Date(event.eventDate).toLocaleTimeString()}
+                    </p>
                   </div>
                 </div>
               ))}
@@ -126,15 +133,17 @@ export default function ClubsPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-gray-600">Total Clubs</span>
-                <span className="font-bold">8</span>
+                <span className="font-bold">{clubs.length}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-gray-600">Active Members</span>
-                <span className="font-bold">245</span>
+                <span className="font-bold">
+                  {clubs.reduce((total, club) => total + (club.clubMembers?.length || 0), 0)}
+                </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-gray-600">Events This Month</span>
-                <span className="font-bold">12</span>
+                <span className="text-gray-600">Upcoming Events</span>
+                <span className="font-bold">{upcomingEvents.length}</span>
               </div>
             </div>
           </Card>
