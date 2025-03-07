@@ -16,16 +16,13 @@ const LoadingScreen = () => (
 // Dynamically import the AR component with no SSR
 const ARNavigationComponent = dynamic(() => import("./ARNavigationComponent"), {
   ssr: false,
-  loading: () => <LoadingScreen />,
 });
 
 // Main page component
-const ARNavigationPage = () => {
+export default function ARNavigationPage() {
   return (
     <Suspense fallback={<LoadingScreen />}>
       <ARNavigationComponent />
     </Suspense>
   );
-};
-
-export default ARNavigationPage;
+}

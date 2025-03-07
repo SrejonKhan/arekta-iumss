@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Script from "next/script";
 import { useGeolocation } from "@/hooks/useGeolocation";
 
-const ARNavigationComponent = () => {
+// Create a component that uses useSearchParams
+const ARContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { location } = useGeolocation();
@@ -282,6 +283,25 @@ const ARNavigationComponent = () => {
         </div>
       )}
     </>
+  );
+};
+
+// Loading component for the Suspense fallback
+const ARLoading = () => (
+  <div className="fixed inset-0 bg-black/90 text-white flex items-center justify-center">
+    <div className="text-center p-6">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white mx-auto mb-4"></div>
+      <p className="text-lg">Initializing AR...</p>
+    </div>
+  </div>
+);
+
+// Main component that wraps the content with Suspense
+const ARNavigationComponent = () => {
+  return (
+    <Suspense fallback={<ARLoading />}>
+      <ARContent />
+    </Suspense>
   );
 };
 
