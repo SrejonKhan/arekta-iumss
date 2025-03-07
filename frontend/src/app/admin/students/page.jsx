@@ -30,28 +30,38 @@ const columns = [
     header: "Email"
   },
   {
-    accessorKey: "role",
-    header: "Role"
+    accessorKey: "userProfile.department",
+    header: "Department",
+    cell: ({ row }) => row.original.userProfile?.department || 'N/A'
   },
   {
-    accessorKey: "authType",
-    header: "Auth Type"
+    accessorKey: "userProfile.currentSemester",
+    header: "Semester",
+    cell: ({ row }) => `${row.original.userProfile?.currentSemester || 'N/A'} (${row.original.userProfile?.levelTerm || 'N/A'})`
+  },
+  {
+    accessorKey: "userProfile.currentCgpa",
+    header: "CGPA",
+    cell: ({ row }) => row.original.userProfile?.currentCgpa || 'N/A'
+  },
+  {
+    accessorKey: "userProfile.completedCredit",
+    header: "Credits",
+    cell: ({ row }) => {
+      const profile = row.original.userProfile
+      return profile ? (
+        <div className="text-sm">
+          <div>Completed: {profile.completedCredit || 0}</div>
+          <div>Ongoing: {profile.ongoingCredit || 0}</div>
+          <div>Required: {profile.requiredCredit || 0}</div>
+        </div>
+      ) : 'N/A'
+    }
   },
   {
     accessorKey: "createdAt",
-    header: "Created At",
+    header: "Joined Date",
     cell: ({ row }) => new Date(row.original.createdAt).toLocaleDateString()
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => (
-      <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-        row.original.status === UserStatus.ACTIVE ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-      }`}>
-        {row.original.status === UserStatus.ACTIVE ? 'Active' : 'Inactive'}
-      </div>
-    )
   }
 ]
 
@@ -96,6 +106,32 @@ export default function StudentsPage() {
         isLoading={loading}
         pagination
         searchable
+        filterableColumns={[
+          {
+            id: 'userProfile.department',
+            title: 'Department',
+            options: [
+              { label: 'CSE', value: 'CSE' },
+              { label: 'EEE', value: 'EEE' },
+              { label: 'ME', value: 'ME' },
+              { label: 'CE', value: 'CE' },
+            ]
+          },
+          {
+            id: 'userProfile.currentSemester',
+            title: 'Semester',
+            options: [
+              { label: '1st', value: '1' },
+              { label: '2nd', value: '2' },
+              { label: '3rd', value: '3' },
+              { label: '4th', value: '4' },
+              { label: '5th', value: '5' },
+              { label: '6th', value: '6' },
+              { label: '7th', value: '7' },
+              { label: '8th', value: '8' },
+            ]
+          }
+        ]}
       />
     </div>
   )

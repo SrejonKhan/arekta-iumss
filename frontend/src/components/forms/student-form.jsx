@@ -84,7 +84,7 @@ export function StudentForm({ onSubmit }) {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="username">Username *</Label>
+          <Label htmlFor="username">Student ID *</Label>
           <Input
             id="username"
             name="username"

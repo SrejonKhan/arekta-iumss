@@ -24,14 +24,32 @@ const columns = [
     header: "Email"
   },
   {
+    accessorKey: "userProfile.department",
+    header: "Department",
+    cell: ({ row }) => row.original.userProfile?.department || 'N/A'
+  },
+  {
     accessorKey: "userProfile.designation",
     header: "Designation",
     cell: ({ row }) => row.original.userProfile?.designation || 'N/A'
   },
   {
-    accessorKey: "userProfile.department",
-    header: "Department",
-    cell: ({ row }) => row.original.userProfile?.department || 'N/A'
+    accessorKey: "userProfile.tenureInfo",
+    header: "Tenure",
+    cell: ({ row }) => {
+      const profile = row.original.userProfile
+      if (!profile?.tenureStart && !profile?.tenureEnd) return 'Not Set'
+      
+      const start = profile.tenureStart ? new Date(profile.tenureStart).toLocaleDateString() : 'N/A'
+      const end = profile.tenureEnd ? new Date(profile.tenureEnd).toLocaleDateString() : 'N/A'
+      
+      return (
+        <div className="text-sm">
+          <div>Start: {start}</div>
+          <div>End: {end}</div>
+        </div>
+      )
+    }
   },
   {
     accessorKey: "createdAt",
@@ -39,15 +57,16 @@ const columns = [
     cell: ({ row }) => new Date(row.original.createdAt).toLocaleDateString()
   },
   {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => (
-      <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-        row.original.status === 'ACTIVE' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-      }`}>
-        {row.original.status === 'ACTIVE' ? 'Active' : 'Inactive'}
-      </div>
-    )
+    accessorKey: "userProfile.profileIntro",
+    header: "Profile Intro",
+    cell: ({ row }) => {
+      const intro = row.original.userProfile?.profileIntro
+      return intro ? (
+        <div className="max-w-xs truncate" title={intro}>
+          {intro}
+        </div>
+      ) : 'N/A'
+    }
   }
 ]
 
