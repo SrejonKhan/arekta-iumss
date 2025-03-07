@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { calculateDistance } from "@/utils/poiUtils";
+import { calculateDistance, calculateBearing } from "@/utils/poiUtils";
 
-const ARView = ({ userLocation, destination, onBack }) => {
+const ARView = ({ userLocation, destination, onBack, isInitialized }) => {
   const containerRef = useRef(null);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -11,88 +11,76 @@ const ARView = ({ userLocation, destination, onBack }) => {
   const [distance, setDistance] = useState(null);
   const [bearing, setBearing] = useState(null);
   const [arrowDirection, setArrowDirection] = useState(0);
-  const [permissionGranted, setPermissionGranted] = useState(false);
+  const [hasPermission, setHasPermission] = useState(false);
   const [error, setError] = useState(null);
 
-  // Request device orientation and camera permissions
   useEffect(() => {
-    const requestPermissions = async () => {
+    if (!isInitialized) return;
+
+    // Request camera access
+    const initCamera = async () => {
       try {
-        // Request camera access
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: "environment",
-            width: { ideal: window.innerWidth },
-            height: { ideal: window.innerHeight },
-          },
+          video: { facingMode: "environment" },
+          audio: false,
         });
 
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
-        }
-
-        // Request device orientation permission if needed (iOS 13+)
-        if (
-          typeof DeviceOrientationEvent !== "undefined" &&
-          typeof DeviceOrientationEvent.requestPermission === "function"
-        ) {
-          const permission = await DeviceOrientationEvent.requestPermission();
-          if (permission === "granted") {
-            window.addEventListener("deviceorientation", handleOrientation);
-            setPermissionGranted(true);
-          } else {
-            setError("Device orientation permission denied");
-          }
-        } else {
-          // For devices that don't require permission
-          window.addEventListener("deviceorientation", handleOrientation);
-          setPermissionGranted(true);
+          setHasPermission(true);
         }
       } catch (err) {
-        setError(`Error accessing device features: ${err.message}`);
+        setError("Camera access denied. Please enable camera permissions.");
+        console.error("Camera access error:", err);
       }
     };
 
-    requestPermissions();
+    initCamera();
 
-    // Calculate initial distance and bearing
-    updatePositionData();
+    // Initialize device orientation
+    const handleOrientation = (event) => {
+      if (!userLocation || !destination) return;
 
-    // Set up interval to update position data
-    const intervalId = setInterval(updatePositionData, 1000);
+      const targetBearing = calculateBearing(
+        userLocation.latitude,
+        userLocation.longitude,
+        destination.latitude,
+        destination.longitude
+      );
+
+      // Get device compass heading (alpha)
+      const compass = event.webkitCompassHeading || Math.abs(event.alpha - 360);
+      const relativeBearing = (targetBearing - compass + 360) % 360;
+      setBearing(relativeBearing);
+    };
+
+    if (typeof DeviceOrientationEvent.requestPermission === "function") {
+      DeviceOrientationEvent.requestPermission()
+        .then((response) => {
+          if (response === "granted") {
+            window.addEventListener(
+              "deviceorientation",
+              handleOrientation,
+              true
+            );
+          } else {
+            setError(
+              "Compass access denied. Please enable orientation permissions."
+            );
+          }
+        })
+        .catch(console.error);
+    } else {
+      window.addEventListener("deviceorientation", handleOrientation, true);
+    }
 
     return () => {
-      // Clean up
-      clearInterval(intervalId);
-      window.removeEventListener("deviceorientation", handleOrientation);
-
-      // Stop video stream
-      if (videoRef.current && videoRef.current.srcObject) {
-        const tracks = videoRef.current.srcObject.getTracks();
-        tracks.forEach((track) => track.stop());
+      window.removeEventListener("deviceorientation", handleOrientation, true);
+      if (videoRef.current?.srcObject) {
+        videoRef.current.srcObject.getTracks().forEach((track) => track.stop());
       }
     };
-  }, [userLocation, destination]);
-
-  // Handle device orientation changes
-  const handleOrientation = (event) => {
-    // Alpha is the compass direction (0-360)
-    // Beta is the front-to-back tilt (0-180)
-    // Gamma is the left-to-right tilt (-90-90)
-    setDeviceOrientation({
-      alpha: event.alpha, // compass direction
-      beta: event.beta, // front/back tilt
-      gamma: event.gamma, // left/right tilt
-    });
-
-    // Update arrow direction based on bearing and device orientation
-    if (bearing !== null) {
-      // Calculate the difference between bearing and device orientation
-      // This gives us the direction to point the arrow
-      const direction = (bearing - event.alpha + 360) % 360;
-      setArrowDirection(direction);
-    }
-  };
+  }, [isInitialized, userLocation, destination]);
 
   // Update distance and bearing to destination
   const updatePositionData = () => {
@@ -115,26 +103,6 @@ const ARView = ({ userLocation, destination, onBack }) => {
       destination.longitude
     );
     setBearing(bear);
-  };
-
-  // Calculate bearing between two points
-  const calculateBearing = (lat1, lon1, lat2, lon2) => {
-    // Convert to radians
-    const toRad = (deg) => (deg * Math.PI) / 180;
-
-    const startLat = toRad(lat1);
-    const startLng = toRad(lon1);
-    const destLat = toRad(lat2);
-    const destLng = toRad(lon2);
-
-    const y = Math.sin(destLng - startLng) * Math.cos(destLat);
-    const x =
-      Math.cos(startLat) * Math.sin(destLat) -
-      Math.sin(startLat) * Math.cos(destLat) * Math.cos(destLng - startLng);
-    let brng = Math.atan2(y, x);
-    brng = ((brng * 180) / Math.PI + 360) % 360; // Convert to degrees
-
-    return brng;
   };
 
   // Draw AR overlay
@@ -251,7 +219,7 @@ const ARView = ({ userLocation, destination, onBack }) => {
     );
   }
 
-  if (!permissionGranted) {
+  if (!hasPermission) {
     return (
       <div className="h-full flex flex-col items-center justify-center bg-gray-900 text-white p-4">
         <div className="animate-pulse mb-4">

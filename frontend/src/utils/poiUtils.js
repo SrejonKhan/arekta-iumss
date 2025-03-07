@@ -149,3 +149,22 @@ export const generateRandomPOIs = (lat, lng, minRadius, maxRadius, count) => {
 
   return pois;
 };
+
+// Calculate bearing between two points using their coordinates
+export const calculateBearing = (lat1, lon1, lat2, lon2) => {
+  // Convert to radians
+  const φ1 = (lat1 * Math.PI) / 180;
+  const φ2 = (lat2 * Math.PI) / 180;
+  const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+
+  // Calculate bearing
+  const y = Math.sin(Δλ) * Math.cos(φ2);
+  const x =
+    Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+  const θ = Math.atan2(y, x);
+
+  // Convert to degrees
+  const bearing = ((θ * 180) / Math.PI + 360) % 360;
+
+  return bearing;
+};
