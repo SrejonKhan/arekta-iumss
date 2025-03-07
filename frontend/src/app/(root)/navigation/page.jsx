@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { generateRandomPOIs } from "@/utils/poiUtils";
@@ -26,6 +26,7 @@ const NavigationPage = () => {
   const { location, error: locationError } = useGeolocation();
   const [isMobile, setIsMobile] = useState(false);
   const [isARInitialized, setIsARInitialized] = useState(false);
+  const [poisGenerated, setPoisGenerated] = useState(false);
 
   // Check if device is mobile
   useEffect(() => {
@@ -42,9 +43,9 @@ const NavigationPage = () => {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  // Generate random POIs when location changes
+  // Generate random POIs only once when location is first available
   useEffect(() => {
-    if (location) {
+    if (location && !poisGenerated) {
       const randomPois = generateRandomPOIs(
         location.latitude,
         location.longitude,
@@ -53,16 +54,29 @@ const NavigationPage = () => {
         10
       );
       setPois(randomPois);
+      setPoisGenerated(true);
     }
-  }, [location]);
+  }, [location, poisGenerated]);
 
-  const handlePoiSelect = (poi) => {
-    setSelectedPoi(poi);
-    if (isMobile) {
+  // Handle POI selection and AR mode
+  const handlePoiSelect = useCallback(
+    (poi) => {
+      setSelectedPoi(poi);
+      if (isMobile) {
+        setViewMode("ar");
+        setIsARInitialized(true);
+      }
+    },
+    [isMobile]
+  );
+
+  // Handle AR navigation
+  const handleARNavigation = useCallback(() => {
+    if (selectedPoi) {
       setViewMode("ar");
       setIsARInitialized(true);
     }
-  };
+  }, [selectedPoi]);
 
   if (locationError) {
     return (
@@ -149,10 +163,7 @@ const NavigationPage = () => {
 
           {isMobile && (
             <button
-              onClick={() => {
-                setViewMode("ar");
-                setIsARInitialized(true);
-              }}
+              onClick={handleARNavigation}
               disabled={!selectedPoi}
               className={`flex items-center px-6 py-3 rounded-xl font-semibold transition-all duration-200 ${
                 viewMode === "ar"
@@ -281,10 +292,7 @@ const NavigationPage = () => {
               </div>
               {isMobile && (
                 <button
-                  onClick={() => {
-                    setViewMode("ar");
-                    setIsARInitialized(true);
-                  }}
+                  onClick={handleARNavigation}
                   className="ml-4 bg-primary text-white px-6 py-3 rounded-xl font-semibold hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"
                 >
                   Start AR Navigation

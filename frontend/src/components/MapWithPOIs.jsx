@@ -10,10 +10,10 @@ import {
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, memo } from "react";
 import { calculateDistance } from "@/utils/poiUtils";
 
-// Custom marker icons
+// Custom marker icons (moved outside component to prevent recreation)
 const createCustomIcon = (color) => {
   return L.divIcon({
     className: "custom-marker",
@@ -49,8 +49,85 @@ const userIcon = createCustomIcon("#4F46E5"); // Primary color for user
 const poiIcon = createCustomIcon("#EF4444"); // Red color for POIs
 const selectedPoiIcon = createCustomIcon("#059669"); // Green color for selected POI
 
-const MapWithPOIs = ({ userLocation, pois, selectedPoi, onPoiSelect }) => {
+// Memoized POI marker component
+const POIMarker = memo(({ poi, isSelected, onSelect }) => (
+  <Marker
+    position={[poi.latitude, poi.longitude]}
+    icon={isSelected ? selectedPoiIcon : poiIcon}
+    eventHandlers={{
+      click: () => onSelect(poi),
+    }}
+  >
+    <Popup className="custom-popup">
+      <div className="p-4">
+        <h3 className="font-bold text-xl text-gray-800 mb-2">{poi.name}</h3>
+        <p className="text-gray-600 text-sm">{poi.description}</p>
+        <div className="mt-4 flex items-center justify-between">
+          <span className="text-primary font-medium flex items-center">
+            <svg
+              className="w-4 h-4 mr-1"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+              />
+            </svg>
+            {poi.distance.toFixed(2)} km
+          </span>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelect(poi);
+            }}
+            className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors flex items-center"
+          >
+            <svg
+              className="w-4 h-4 mr-1"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+            Navigate
+          </button>
+        </div>
+      </div>
+    </Popup>
+  </Marker>
+));
+
+POIMarker.displayName = "POIMarker";
+
+// Memoized map component
+const MapWithPOIs = memo(({ userLocation, pois, selectedPoi, onPoiSelect }) => {
   const [map, setMap] = useState(null);
+
+  const handleMapCreated = useCallback((mapInstance) => {
+    setMap(mapInstance);
+  }, []);
+
+  const handleCenterMap = useCallback(() => {
+    if (map && userLocation) {
+      map.setView([userLocation.latitude, userLocation.longitude], 14);
+    }
+  }, [map, userLocation]);
 
   if (!userLocation) return null;
 
@@ -64,7 +141,7 @@ const MapWithPOIs = ({ userLocation, pois, selectedPoi, onPoiSelect }) => {
         style={{ height: "100%", width: "100%" }}
         className="z-0"
         zoomControl={false}
-        whenCreated={setMap}
+        whenCreated={handleMapCreated}
       >
         {/* Modern map style */}
         <TileLayer
@@ -88,73 +165,19 @@ const MapWithPOIs = ({ userLocation, pois, selectedPoi, onPoiSelect }) => {
 
         {/* POI markers */}
         {pois.map((poi) => (
-          <Marker
+          <POIMarker
             key={poi.id}
-            position={[poi.latitude, poi.longitude]}
-            icon={poi === selectedPoi ? selectedPoiIcon : poiIcon}
-            eventHandlers={{
-              click: () => onPoiSelect(poi),
-            }}
-          >
-            <Popup className="custom-popup">
-              <div className="p-4">
-                <h3 className="font-bold text-xl text-gray-800 mb-2">
-                  {poi.name}
-                </h3>
-                <p className="text-gray-600 text-sm">{poi.description}</p>
-                <div className="mt-4 flex items-center justify-between">
-                  <span className="text-primary font-medium flex items-center">
-                    <svg
-                      className="w-4 h-4 mr-1"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                      />
-                    </svg>
-                    {poi.distance.toFixed(2)} km
-                  </span>
-                  <button
-                    onClick={() => onPoiSelect(poi)}
-                    className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors flex items-center"
-                  >
-                    <svg
-                      className="w-4 h-4 mr-1"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M9 5l7 7-7 7"
-                      />
-                    </svg>
-                    Navigate
-                  </button>
-                </div>
-              </div>
-            </Popup>
-          </Marker>
+            poi={poi}
+            isSelected={poi === selectedPoi}
+            onSelect={onPoiSelect}
+          />
         ))}
       </MapContainer>
 
       {/* Map overlay controls */}
       <div className="absolute top-4 right-4 bg-white rounded-lg shadow-lg p-2 z-[400]">
         <button
-          onClick={() => map?.setView(center, 14)}
+          onClick={handleCenterMap}
           className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           title="Center on your location"
         >
@@ -206,6 +229,8 @@ const MapWithPOIs = ({ userLocation, pois, selectedPoi, onPoiSelect }) => {
       `}</style>
     </div>
   );
-};
+});
+
+MapWithPOIs.displayName = "MapWithPOIs";
 
 export default MapWithPOIs;
