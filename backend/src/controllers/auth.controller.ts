@@ -44,17 +44,17 @@ const signUp = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const payload = signUpSchema.parse(req.body);
     const { email, password, username, displayName } = payload;
-    const { user, token } = await handleUserSignUp(email, password, username, displayName);
+    // const { user, token } = await handleUserSignUp(email, password, username, displayName);
 
-    logger.info(`New user created. UserID: ${user.id}.`);
+    // logger.info(`New user created. UserID: ${user.id}.`);
 
-    const body = {
-      message: "Successfully signed up!",
-      user,
-      token,
-    };
-    sendToExchange("exchange.mail", "user", user);
-    res.status(httpStatus.OK).send(body);
+    // const body = {
+    //   message: "Successfully signed up!",
+    //   user,
+    //   token,
+    // };
+    // sendToExchange("exchange.mail", "user", user);
+    // res.status(httpStatus.OK).send(body);
   } catch (ex) {
     next(ex);
   }
@@ -153,14 +153,55 @@ const googleOAuth2SignIn = async (req: Request, res: Response, next: NextFunctio
 const createUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const payload = signUpSchema.parse(req.body);
-    const { email, password, username, displayName, currentSemester, department } = payload;
-    const { user, token } = await handleUserSignUp(email, password, username, displayName, currentSemester, department);
+
+    const {
+      role,
+      email,
+      password,
+      username,
+      displayName,
+      currentSemester,
+      department,
+      profileIntro,
+      designation,
+      avatarUrl,
+      tenureStart,
+      tenureEnd,
+      clubGoals,
+      levelTerm,
+      currentCgpa,
+      requiredCredit,
+      completedCredit,
+      ongoingCredit,
+    } = payload;
+
+    const { user, userProfile, token } = await handleUserSignUp(
+      role,
+      email,
+      password,
+      username,
+      displayName,
+      currentSemester,
+      department,
+      profileIntro,
+      designation,
+      avatarUrl,
+      tenureStart,
+      tenureEnd,
+      clubGoals,
+      levelTerm,
+      currentCgpa,
+      requiredCredit,
+      completedCredit,
+      ongoingCredit
+    );
 
     logger.info(`New user created . UserID: ${user.id}.`);
 
     const body = {
       message: "Successfully signed up!",
       user,
+      userProfile,
       token,
     };
     sendToExchange("exchange.mail", "user", user);

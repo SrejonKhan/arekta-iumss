@@ -47,10 +47,15 @@ model UserProfile {
   designation  String?
   avatarUrl    String?
   socialLinks  SocialLink[]
-  tenureStart  DateTime
-  tenureEnd    DateTime
+  tenureStart  DateTime?
+  tenureEnd    DateTime?
   clubGoals    String?
-  currentSemester String @default("1st")
+  currentSemester String @default("Fall 2024")
+  levelTerm   String @default("Level 1 Term 1")
+  currentCgpa String @default("3.5")
+  requiredCredit Int @default(150)
+  completedCredit Int @default(0)
+  ongoingCredit Int @default(0)
   department String @default("CSE")
   user         User         @relation(fields: [userId], references: [id])
   userId       String       @unique @db.ObjectId

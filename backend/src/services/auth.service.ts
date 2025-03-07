@@ -3,7 +3,7 @@ import bcrypt from "bcrypt";
 import { ApiError } from "../utils/error";
 import config from "../config/base.config";
 import jwt from "jsonwebtoken";
-import { User } from "@prisma/client";
+import { User, Role } from "@prisma/client";
 import { excludeFromObject } from "../utils/object";
 import { generateUserNameFromEmail, maskEmailAddress } from "../utils/string";
 import httpStatus from "http-status";
@@ -38,14 +38,25 @@ const handleUserSignIn = async (email: string, password: string) => {
     },
   };
 };
-
 const handleUserSignUp = async (
+  role: Role,
   email: string,
   password: string,
   username: string,
-  displayName: string,
+  displayName?: string,
   currentSemester?: string,
-  department?: string
+  department?: string,
+  profileIntro?: string,
+  designation?: string,
+  avatarUrl?: string,
+  tenureStart?: Date,
+  tenureEnd?: Date,
+  clubGoals?: string,
+  levelTerm?: string,
+  currentCgpa?: string,
+  requiredCredit?: number,
+  completedCredit?: number,
+  ongoingCredit?: number
 ) => {
   const userWithEmail = await prisma.user.findUnique({
     where: { email: email },
@@ -71,16 +82,26 @@ const handleUserSignUp = async (
       username: username,
       displayName: displayName,
       passwordHash: passwordHash,
+      role: role,
     },
   });
 
   const userProfile = await prisma.userProfile.create({
     data: {
-      user: { connect: { id: user.id } },
+      userId: user.id,
       currentSemester: currentSemester,
-      tenureStart: new Date(),
-      tenureEnd: new Date(),
       department: department,
+      profileIntro: profileIntro,
+      designation: designation,
+      avatarUrl: avatarUrl,
+      tenureStart: tenureStart,
+      tenureEnd: tenureEnd,
+      clubGoals: clubGoals,
+      levelTerm: levelTerm,
+      currentCgpa: currentCgpa,
+      requiredCredit: requiredCredit,
+      completedCredit: completedCredit,
+      ongoingCredit: ongoingCredit,
     },
   });
 
