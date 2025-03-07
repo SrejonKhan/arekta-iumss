@@ -6,50 +6,79 @@ import { PageHeader } from "@/components/ui/page-header"
 import { DataTable } from "@/components/ui/data-table"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { PlusCircle, Calendar, Users } from "lucide-react"
+import { PlusCircle, Calendar, Users, Settings } from "lucide-react"
 import { toast } from "sonner"
-import { getAllClubs, getClubEvents } from "@/services/clubService"
-
-const columns = [
-  {
-    accessorKey: "clubName",
-    header: "Club Name"
-  },
-  {
-    accessorKey: "clubInfo",
-    header: "Description",
-    cell: ({ row }) => (
-      <div className="max-w-xs truncate" title={row.original.clubInfo}>
-        {row.original.clubInfo}
-      </div>
-    )
-  },
-  {
-    accessorKey: "clubGoals",
-    header: "Goals",
-    cell: ({ row }) => (
-      <div className="max-w-xs truncate" title={row.original.clubGoals}>
-        {row.original.clubGoals}
-      </div>
-    )
-  },
-  {
-    accessorKey: "clubMembers",
-    header: "Members",
-    cell: ({ row }) => row.original.clubMembers?.length || 0
-  },
-  {
-    accessorKey: "clubEvents",
-    header: "Events",
-    cell: ({ row }) => row.original.clubEvents?.length || 0
-  }
-]
+import { getAllClubs } from "@/services/clubService"
+import { getClubEvents } from "@/services/eventService"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 export default function ClubsPage() {
   const router = useRouter()
   const [clubs, setClubs] = useState([])
   const [loading, setLoading] = useState(true)
   const [upcomingEvents, setUpcomingEvents] = useState([])
+
+  const columns = [
+    {
+      accessorKey: "clubName",
+      header: "Club Name"
+    },
+    {
+      accessorKey: "clubInfo",
+      header: "Description",
+      cell: ({ row }) => (
+        <div className="max-w-xs truncate" title={row.original.clubInfo}>
+          {row.original.clubInfo}
+        </div>
+      )
+    },
+    {
+      accessorKey: "clubGoals",
+      header: "Goals",
+      cell: ({ row }) => (
+        <div className="max-w-xs truncate" title={row.original.clubGoals}>
+          {row.original.clubGoals}
+        </div>
+      )
+    },
+    {
+      accessorKey: "clubMembers",
+      header: "Members",
+      cell: ({ row }) => row.original.clubMembers?.length || 0
+    },
+    {
+      accessorKey: "clubEvents",
+      header: "Events",
+      cell: ({ row }) => row.original.clubEvents?.length || 0
+    },
+    {
+      id: "actions",
+      cell: ({ row }) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon">
+              <Settings className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => router.push(`/admin/clubs/${row.original.id}/events`)}>
+              <Calendar className="mr-2 h-4 w-4" />
+              Manage Events
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push(`/admin/clubs/${row.original.id}/members`)}>
+              <Users className="mr-2 h-4 w-4" />
+              Manage Members
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )
+    }
+  ]
 
   useEffect(() => {
     const fetchData = async () => {
@@ -125,6 +154,9 @@ export default function ClubsPage() {
                   </div>
                 </div>
               ))}
+              {upcomingEvents.length === 0 && (
+                <p className="text-gray-500 text-center">No upcoming events</p>
+              )}
             </div>
           </Card>
 

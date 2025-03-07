@@ -1,76 +1,70 @@
+"use client"
+
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import StudentInfo from "@/components/home/StudentInfo";
 import UpcomingEvents from "@/components/home/UpcomingEvents";
 import QuickAccess from "@/components/home/QuickAccess";
+import { getStudentProfile, getStudentAcademics } from "@/services/studentService";
+import { toast } from "sonner";
 
 export default function Home() {
-  // Mock student data
-  const studentInfo = {
-    name: "John Doe",
-    id: "2020331001",
-    department: "Computer Science & Engineering",
-    program: "BSc in CSE",
-    currentSemester: "Fall 2023",
-    levelTerm: "Level-3, Term-1",
-    enrolledSemesters: 5,
-    cgpa: "3.85",
-    credits: {
-      completed: 85,
-      ongoing: 21,
-      required: 160,
-    },
-    academicStatus: "Regular",
-    advisor: "Dr. Sarah Johnson",
-  };
+  const router = useRouter()
+  const [loading, setLoading] = useState(true)
+  const [studentInfo, setStudentInfo] = useState(null)
+  const [academicInfo, setAcademicInfo] = useState(null)
 
-  // Upcoming events data
-  const upcomingEvents = {
-    exams: [
-      {
-        course: "CSE 3100",
-        title: "Database Management",
-        date: "2024-03-15",
-        time: "10:00 AM",
-        venue: "Room 301",
-        type: "Mid Term",
-        syllabus: "Chapter 1-5",
-      },
-      {
-        course: "CSE 3101",
-        title: "Operating Systems",
-        date: "2024-03-18",
-        time: "2:00 PM",
-        venue: "Room 402",
-        type: "Quiz 2",
-        syllabus: "Process Management",
-      },
-    ],
-    assignments: [
-      {
-        course: "CSE 3102",
-        title: "Network Programming",
-        deadline: "2024-03-10",
-        status: "Pending",
-        progress: 60,
-        type: "Project",
-      },
-      {
-        course: "CSE 3103",
-        title: "Software Engineering Report",
-        deadline: "2024-03-12",
-        status: "Pending",
-        progress: 30,
-        type: "Assignment",
-      },
-      {
-        course: "CSE 3104",
-        title: "AI Lab Report",
-        deadline: "2024-03-14",
-        status: "Draft Submitted",
-        progress: 80,
-        type: "Lab Report",
-      },
-    ],
-  };
+  useEffect(() => {
+    const token = localStorage.getItem('token')
+    const user = JSON.parse(localStorage.getItem('user') || '{}')
+
+    if (!token || user.role !== 'STUDENT') {
+      router.push('/login')
+      return
+    }
+
+    fetchStudentData()
+  }, [router])
+
+  const fetchStudentData = async () => {
+    try {
+      setLoading(true)
+      const user = JSON.parse(localStorage.getItem('user') || '{}')
+      
+      // Since we already have the user data from login, we can use it directly
+      const profile = user
+      const academics = user.userProfile
+
+      setStudentInfo({
+        name: profile.displayName,
+        id: profile.id,
+        department: academics.department,
+        program: `${academics.department} Engineering`, // Assuming it's engineering
+        currentSemester: academics.currentSemester,
+        levelTerm: `Level-${academics.levelTerm}`,
+        enrolledSemesters: parseInt(academics.currentSemester),
+        cgpa: academics.currentCgpa,
+        credits: {
+          completed: academics.completedCredit,
+          ongoing: academics.ongoingCredit,
+          required: academics.requiredCredit,
+        },
+        academicStatus: "Regular", // This could be derived from other data if available
+        advisor: "Not Assigned", // This could be added when available from API
+      })
+
+      // For now, we'll use empty arrays since we don't have this data yet
+      setAcademicInfo({
+        upcomingExams: [],
+        pendingAssignments: []
+      })
+    } catch (error) {
+      toast.error("Failed to load student data")
+      console.error(error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const features = [
     {
@@ -107,6 +101,14 @@ export default function Home() {
     },
   ];
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
@@ -114,8 +116,8 @@ export default function Home() {
         <div className="block lg:hidden space-y-6">
           <StudentInfo studentInfo={studentInfo} />
           <UpcomingEvents
-            exams={upcomingEvents.exams}
-            assignments={upcomingEvents.assignments}
+            exams={academicInfo?.upcomingExams || []}
+            assignments={academicInfo?.pendingAssignments || []}
           />
           <QuickAccess features={features} />
         </div>
@@ -130,8 +132,8 @@ export default function Home() {
           {/* Right Column */}
           <div className="col-span-2 space-y-6">
             <UpcomingEvents
-              exams={upcomingEvents.exams}
-              assignments={upcomingEvents.assignments}
+              exams={academicInfo?.upcomingExams || []}
+              assignments={academicInfo?.pendingAssignments || []}
             />
             <QuickAccess features={features.slice(0, 3)} />
           </div>

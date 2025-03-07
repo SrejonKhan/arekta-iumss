@@ -14,20 +14,54 @@ import { toast } from "sonner"
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [formData, setFormData] = useState({
+    email: "",
+    password: ""
+  })
   const router = useRouter()
+
+  const handleChange = (e) => {
+    const { name, value } = e.target
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }))
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setIsLoading(true)
 
-    // Add your authentication logic here
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      const response = await fetch('http://localhost:2222/api/v1/auth/signin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || 'Login failed')
+      }
+
+      const data = await response.json()
+      
+      // Store the token and user data
+      localStorage.setItem('token', data.token)
+      localStorage.setItem('user', JSON.stringify(data.user))
+
       toast.success("Login successful!")
-      router.push("/dashboard")
+      
+      // Redirect based on user role - now to root path
+      if (data.user.role === 'STUDENT') {
+        router.push("/") // Changed from /dashboard to /
+      } else {
+        toast.error("Access denied. Student login only.")
+      }
     } catch (error) {
-      toast.error("Invalid credentials")
+      toast.error(error.message || "Invalid credentials")
     } finally {
       setIsLoading(false)
     }
@@ -61,12 +95,16 @@ export default function LoginPage() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="studentId">Student ID</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
-                  id="studentId"
-                  placeholder="Enter your student ID"
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="Enter your email"
                   required
                   disabled={isLoading}
+                  value={formData.email}
+                  onChange={handleChange}
                   className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -75,10 +113,13 @@ export default function LoginPage() {
                 <div className="relative">
                   <Input
                     id="password"
+                    name="password"
                     type={showPassword ? "text" : "password"}
                     placeholder="Enter your password"
                     required
                     disabled={isLoading}
+                    value={formData.password}
+                    onChange={handleChange}
                     className="pr-10 transition-all duration-200 focus:ring-2 focus:ring-blue-500"
                   />
                   <button
