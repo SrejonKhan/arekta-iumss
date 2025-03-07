@@ -1,5 +1,9 @@
-// Function to generate a random point within a radius range
-const generateRandomPoint = (lat, lng, minRadius, maxRadius) => {
+// Function to generate a random point within a radius range in meters
+const generateRandomPoint = (lat, lng, minRadiusMeters, maxRadiusMeters) => {
+  // Convert meters to kilometers for calculation
+  const minRadius = minRadiusMeters / 1000;
+  const maxRadius = maxRadiusMeters / 1000;
+
   // Earth's radius in kilometers
   const earthRadius = 6371;
 
@@ -41,7 +45,7 @@ const generateRandomPoint = (lat, lng, minRadius, maxRadius) => {
   return { lat: newLat, lng: newLng, distance: actualDistance };
 };
 
-// Calculate distance between two points using Haversine formula
+// Calculate distance between two points using Haversine formula (returns distance in kilometers)
 export const calculateDistance = (lat1, lng1, lat2, lng2) => {
   const earthRadius = 6371; // Radius of the earth in km
   const dLat = deg2rad(lat2 - lat1);
@@ -127,13 +131,24 @@ const generatePoiDescription = (category) => {
 };
 
 // Generate random POIs within a radius range
-export const generateRandomPOIs = (lat, lng, minRadius, maxRadius, count) => {
+export const generateRandomPOIs = (
+  lat,
+  lng,
+  minDistanceMeters,
+  maxDistanceMeters,
+  count
+) => {
   const pois = [];
 
   for (let i = 0; i < count; i++) {
     const category =
       poiCategories[Math.floor(Math.random() * poiCategories.length)];
-    const point = generateRandomPoint(lat, lng, minRadius, maxRadius);
+    const point = generateRandomPoint(
+      lat,
+      lng,
+      minDistanceMeters,
+      maxDistanceMeters
+    );
 
     pois.push({
       id: `poi-${i}`,
@@ -142,7 +157,7 @@ export const generateRandomPOIs = (lat, lng, minRadius, maxRadius, count) => {
       icon: category.icon,
       latitude: point.lat,
       longitude: point.lng,
-      distance: point.distance,
+      distance: point.distance * 1000, // Convert to meters
       description: generatePoiDescription(category),
     });
   }
