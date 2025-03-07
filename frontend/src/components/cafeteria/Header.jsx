@@ -1,25 +1,59 @@
 "use client";
 
-const Header = () => {
+import React from 'react';
+
+const Header = ({ cafeterias = [] }) => {
+  const totalFoods = cafeterias.reduce((total, cafeteria) =>
+    total + cafeteria.CafeteriaMenu.reduce((menuTotal, menu) =>
+      menuTotal + menu.foods.length, 0
+    ), 0
+  );
+
   return (
-    <div className="mb-6 sm:mb-8">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-6 mb-4 sm:mb-6">
+    <div className="space-y-4">
+      <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+        Campus Cafeterias
+      </h1>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {cafeterias.map((cafeteria) => (
+          <div key={cafeteria.id} className="bg-white p-4 rounded-lg shadow-sm">
+            <h2 className="font-semibold text-lg text-gray-900">
+              {cafeteria.CafeteriaName}
+            </h2>
+            <p className="text-sm text-gray-600 mt-1">
+              {cafeteria.CafeteriaInfo}
+            </p>
+            <div className="mt-3 text-sm text-gray-600">
+              <div className="flex justify-between">
+                <span>Menus:</span>
+                <span>{cafeteria.CafeteriaMenu.length}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Items:</span>
+                <span>
+                  {cafeteria.CafeteriaMenu.reduce((total, menu) =>
+                    total + menu.foods.length, 0
+                  )}
+                </span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center justify-between bg-white p-4 rounded-lg shadow-sm">
         <div>
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900">
-            Campus Cafeteria
-          </h1>
-          <p className="mt-1 text-sm sm:text-base text-gray-600">
-            Order fresh and delicious meals from our campus cafeteria
+          <h3 className="font-semibold text-gray-900">Today's Menu</h3>
+          <p className="text-sm text-gray-600">
+            {totalFoods} items available across {cafeterias.length} cafeterias
           </p>
         </div>
-
-        <div className="flex items-center gap-3">
-          <div className="relative flex-1 sm:flex-none sm:min-w-[300px]">
+        <div className="flex gap-3">
+          <div className="relative">
             <input
               type="text"
               placeholder="Search meals..."
-              className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 rounded-lg
-                focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-64 pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 rounded-lg
+                focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
             />
             <svg
               className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
@@ -35,14 +69,9 @@ const Header = () => {
               />
             </svg>
           </div>
-
-          <button
-            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg
-            hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
-            active:bg-blue-800 transition-colors"
-          >
+          <button className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors flex items-center gap-2">
             <svg
-              className="w-5 h-5 mr-2"
+              className="w-5 h-5"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
