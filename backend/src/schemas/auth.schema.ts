@@ -9,6 +9,7 @@ const signInSchema = z.object({
 
 const signUpSchema = z
   .object({
+    role: z.enum(["ADMIN", "STUDENT", "FACULTY", "TRANSPORT", "CAFETERIA", "CLUB"]).optional(),
     email: z.string().email({ message: "Invalid email address" }),
     password: z.string().min(6, {
       message: "Password must be at least 6 characters",
@@ -17,6 +18,17 @@ const signUpSchema = z
     displayName: z.string().min(3, { message: "Display Name must be 3 or more characters long." }).optional(),
     currentSemester: z.string().min(1).optional(),
     department: z.string().min(1).optional(),
+    profileIntro: z.string().optional(),
+    designation: z.string().optional(),
+    avatarUrl: z.string().url().optional(),
+    tenureStart: z.date().optional(),
+    tenureEnd: z.date().optional(),
+    clubGoals: z.string().optional(),
+    levelTerm: z.string().optional(),
+    currentCgpa: z.string().optional(),
+    requiredCredit: z.number().optional(),
+    completedCredit: z.number().optional(),
+    ongoingCredit: z.number().optional(),
   })
   .openapi({
     description: "Email-Pass Signup payload Schema",
