@@ -7,7 +7,8 @@ export const useGeolocation = (options = {}) => {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  // Function to get position
+  const getPosition = async () => {
     if (!navigator.geolocation) {
       setError(new Error("Geolocation is not supported by your browser"));
       setLoading(false);
@@ -16,28 +17,42 @@ export const useGeolocation = (options = {}) => {
 
     const geoOptions = {
       enableHighAccuracy: true,
-      timeout: 5000,
+      timeout: 15000, // Increased timeout to 15 seconds
       maximumAge: 0,
       ...options,
     };
 
-    // Get initial position
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setLocation({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          accuracy: position.coords.accuracy,
-          timestamp: position.timestamp,
-        });
-        setLoading(false);
-      },
-      (error) => {
-        setError(error);
-        setLoading(false);
-      },
-      geoOptions
-    );
+    try {
+      const position = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, geoOptions);
+      });
+
+      setLocation({
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        accuracy: position.coords.accuracy,
+        timestamp: position.timestamp,
+      });
+      setError(null);
+      setLoading(false);
+    } catch (err) {
+      console.warn("Error getting location:", err);
+      setError(err);
+      setLoading(false);
+
+      // Retry after 2 seconds if it's a timeout error
+      if (err.code === err.TIMEOUT) {
+        setTimeout(() => {
+          setLoading(true);
+          setError(null);
+          getPosition();
+        }, 2000);
+      }
+    }
+  };
+
+  useEffect(() => {
+    getPosition();
 
     // Set up watch position for continuous updates
     const watchId = navigator.geolocation.watchPosition(
@@ -48,13 +63,20 @@ export const useGeolocation = (options = {}) => {
           accuracy: position.coords.accuracy,
           timestamp: position.timestamp,
         });
+        setError(null);
         setLoading(false);
       },
       (error) => {
+        console.warn("Watch position error:", error);
         setError(error);
         setLoading(false);
       },
-      geoOptions
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 0,
+        ...options,
+      }
     );
 
     // Clean up
@@ -63,5 +85,12 @@ export const useGeolocation = (options = {}) => {
     };
   }, [options]);
 
-  return { location, error, loading };
+  // Expose a retry function
+  const retry = () => {
+    setLoading(true);
+    setError(null);
+    getPosition();
+  };
+
+  return { location, error, loading, retry };
 };
