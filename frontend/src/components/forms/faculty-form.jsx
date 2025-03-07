@@ -13,25 +13,51 @@ export function FacultyForm({ onSubmit }) {
     password: "",
     username: "",
     displayName: "",
-    department: "",
-    designation: "",
-    tenureStart: "",
-    tenureEnd: ""
+    role: "FACULTY",
+    userProfile: {
+      department: "",
+      designation: "",
+      tenureStart: "",
+      tenureEnd: "",
+      profileIntro: ""
+    }
   })
 
   const handleChange = (e) => {
     const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }))
+    if (name.includes('userProfile.')) {
+      const profileField = name.split('.')[1]
+      setFormData(prev => ({
+        ...prev,
+        userProfile: {
+          ...prev.userProfile,
+          [profileField]: value
+        }
+      }))
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }))
+    }
   }
 
-  const handleSelectChange = (name, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }))
+  const handleSelectChange = (field, value) => {
+    if (field.includes('userProfile.')) {
+      const profileField = field.split('.')[1]
+      setFormData(prev => ({
+        ...prev,
+        userProfile: {
+          ...prev.userProfile,
+          [profileField]: value
+        }
+      }))
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [field]: value
+      }))
+    }
   }
 
   const handleSubmit = async (e) => {
@@ -95,10 +121,10 @@ export function FacultyForm({ onSubmit }) {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="department">Department</Label>
+          <Label htmlFor="userProfile.department">Department</Label>
           <Select 
-            name="department" 
-            onValueChange={(value) => handleSelectChange("department", value)}
+            name="userProfile.department" 
+            onValueChange={(value) => handleSelectChange("userProfile.department", value)}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select department" />
@@ -113,10 +139,10 @@ export function FacultyForm({ onSubmit }) {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="designation">Designation</Label>
+          <Label htmlFor="userProfile.designation">Designation</Label>
           <Select 
-            name="designation" 
-            onValueChange={(value) => handleSelectChange("designation", value)}
+            name="userProfile.designation" 
+            onValueChange={(value) => handleSelectChange("userProfile.designation", value)}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select designation" />
@@ -131,23 +157,33 @@ export function FacultyForm({ onSubmit }) {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="tenureStart">Tenure Start Date</Label>
+          <Label htmlFor="userProfile.tenureStart">Tenure Start Date</Label>
           <Input
-            id="tenureStart"
-            name="tenureStart"
+            id="userProfile.tenureStart"
+            name="userProfile.tenureStart"
             type="date"
-            value={formData.tenureStart}
+            value={formData.userProfile.tenureStart}
             onChange={handleChange}
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="tenureEnd">Tenure End Date</Label>
+          <Label htmlFor="userProfile.tenureEnd">Tenure End Date</Label>
           <Input
-            id="tenureEnd"
-            name="tenureEnd"
+            id="userProfile.tenureEnd"
+            name="userProfile.tenureEnd"
             type="date"
-            value={formData.tenureEnd}
+            value={formData.userProfile.tenureEnd}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div className="col-span-2 space-y-2">
+          <Label htmlFor="userProfile.profileIntro">Profile Introduction</Label>
+          <Input
+            id="userProfile.profileIntro"
+            name="userProfile.profileIntro"
+            value={formData.userProfile.profileIntro}
             onChange={handleChange}
           />
         </div>

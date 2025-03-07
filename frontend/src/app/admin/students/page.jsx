@@ -22,29 +22,25 @@ const columns = [
   },
   {
     accessorKey: "displayName",
-    header: "Name"
+    header: "Name",
+    cell: ({ row }) => row.original.displayName || 'N/A'
   },
   {
     accessorKey: "email",
     header: "Email"
   },
   {
-    accessorKey: "userProfile.department",
-    header: "Department"
+    accessorKey: "role",
+    header: "Role"
   },
   {
-    accessorKey: "userProfile.currentSemester",
-    header: "Semester"
+    accessorKey: "authType",
+    header: "Auth Type"
   },
   {
-    accessorKey: "userProfile.currentCgpa",
-    header: "CGPA",
-    cell: ({ row }) => row.original.userProfile?.currentCgpa || 'N/A'
-  },
-  {
-    accessorKey: "userProfile.completedCredit",
-    header: "Completed Credits",
-    cell: ({ row }) => row.original.userProfile?.completedCredit || '0'
+    accessorKey: "createdAt",
+    header: "Created At",
+    cell: ({ row }) => new Date(row.original.createdAt).toLocaleDateString()
   },
   {
     accessorKey: "status",
@@ -69,11 +65,10 @@ export default function StudentsPage() {
       try {
         setLoading(true)
         const data = await getAllStudents()
-        // Filter only student users from the response
-        const studentUsers = data.filter(user => user.role === 'STUDENT')
-        setStudents(studentUsers)
+        setStudents(data)
       } catch (error) {
         toast.error(error.message || "Failed to fetch students")
+        setStudents([])
       } finally {
         setLoading(false)
       }
@@ -101,18 +96,6 @@ export default function StudentsPage() {
         isLoading={loading}
         pagination
         searchable
-        filterableColumns={[
-          {
-            id: 'userProfile.department',
-            title: 'Department',
-            options: [
-              { label: 'CSE', value: 'CSE' },
-              { label: 'EEE', value: 'EEE' },
-              { label: 'ME', value: 'ME' },
-              { label: 'CE', value: 'CE' },
-            ]
-          }
-        ]}
       />
     </div>
   )
