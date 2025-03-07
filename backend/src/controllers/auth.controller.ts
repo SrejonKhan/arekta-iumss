@@ -11,6 +11,7 @@ import {
   exchangeAccessToken,
   findUserByEmail,
   handleChangePassword,
+  handleGetUsersByRole,
   handleGoogleSignIn,
   handleRedeemChangePassword,
   handleUserSignIn,
@@ -20,6 +21,7 @@ import logger from "../utils/logger";
 import { NextFunction, Request, Response } from "express";
 import { excludeFromObject } from "../utils/object";
 import { sendToExchange } from "../lib/amqp";
+import { Role } from "@prisma/client";
 
 const signIn = async (req, res, next) => {
   try {
@@ -211,4 +213,30 @@ const createUser = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-export { signIn, signUp, whoami, changePassword, redeemChangePassword, refreshAccessToken, googleOAuth2SignIn, createUser };
+const getUsersByRole = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { role } = req.query;
+
+    const users = await handleGetUsersByRole(role as Role);
+
+    const body = {
+      message: "Successfully fetched users by role!",
+      users,
+    };
+    res.status(httpStatus.OK).send(body);
+  } catch (ex) {
+    next(ex);
+  }
+};
+
+export {
+  signIn,
+  signUp,
+  whoami,
+  changePassword,
+  redeemChangePassword,
+  refreshAccessToken,
+  googleOAuth2SignIn,
+  createUser,
+  getUsersByRole,
+};

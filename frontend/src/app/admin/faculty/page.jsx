@@ -1,74 +1,77 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { PageHeader } from "@/components/ui/page-header"
 import { DataTable } from "@/components/ui/data-table"
 import { Button } from "@/components/ui/button"
 import { PlusCircle } from "lucide-react"
+import { toast } from "sonner"
+import { getAllFaculty } from "@/services/facultyService"
 
 const columns = [
   {
-    accessorKey: "id",
-    header: "ID"
+    accessorKey: "username",
+    header: "Faculty ID"
   },
   {
-    accessorKey: "name",
-    header: "Name"
+    accessorKey: "displayName",
+    header: "Name",
+    cell: ({ row }) => row.original.displayName || 'N/A'
   },
   {
     accessorKey: "email",
     header: "Email"
   },
   {
-    accessorKey: "department",
-    header: "Department"
+    accessorKey: "userProfile.designation",
+    header: "Designation",
+    cell: ({ row }) => row.original.userProfile?.designation || 'N/A'
   },
   {
-    accessorKey: "designation",
-    header: "Designation"
+    accessorKey: "userProfile.department",
+    header: "Department",
+    cell: ({ row }) => row.original.userProfile?.department || 'N/A'
   },
   {
-    accessorKey: "specialization",
-    header: "Specialization"
+    accessorKey: "createdAt",
+    header: "Joined Date",
+    cell: ({ row }) => new Date(row.original.createdAt).toLocaleDateString()
   },
   {
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => (
       <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-        row.original.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+        row.original.status === 'ACTIVE' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
       }`}>
-        {row.original.status}
+        {row.original.status === 'ACTIVE' ? 'Active' : 'Inactive'}
       </div>
     )
   }
 ]
 
-const dummyData = [
-  {
-    id: "FAC001",
-    name: "Dr. Robert Wilson",
-    email: "robert@example.com",
-    department: "Computer Science",
-    designation: "Professor",
-    specialization: "Machine Learning",
-    status: "Active"
-  },
-  {
-    id: "FAC002",
-    name: "Dr. Sarah Johnson",
-    email: "sarah@example.com",
-    department: "Electrical Engineering",
-    designation: "Associate Professor",
-    specialization: "Power Systems",
-    status: "Active"
-  }
-]
-
 export default function FacultyPage() {
   const router = useRouter()
-  const [faculty] = useState(dummyData)
+  const [faculty, setFaculty] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchFaculty = async () => {
+      try {
+        setLoading(true)
+        const data = await getAllFaculty()
+        setFaculty(data)
+      } catch (error) {
+        toast.error(error.message || "Failed to fetch faculty members")
+        setFaculty([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchFaculty()
+  }, [])
 
   return (
     <div className="space-y-6">
@@ -86,6 +89,31 @@ export default function FacultyPage() {
       <DataTable
         columns={columns}
         data={faculty}
+        isLoading={loading}
+        pagination
+        searchable
+        filterableColumns={[
+          {
+            id: 'userProfile.department',
+            title: 'Department',
+            options: [
+              { label: 'CSE', value: 'CSE' },
+              { label: 'EEE', value: 'EEE' },
+              { label: 'ME', value: 'ME' },
+              { label: 'CE', value: 'CE' },
+            ]
+          },
+          {
+            id: 'userProfile.designation',
+            title: 'Designation',
+            options: [
+              { label: 'Professor', value: 'Professor' },
+              { label: 'Associate Professor', value: 'Associate Professor' },
+              { label: 'Assistant Professor', value: 'Assistant Professor' },
+              { label: 'Lecturer', value: 'Lecturer' },
+            ]
+          }
+        ]}
       />
     </div>
   )

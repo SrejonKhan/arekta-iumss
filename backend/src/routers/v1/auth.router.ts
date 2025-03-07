@@ -2,6 +2,7 @@ import express from "express";
 import {
   changePassword,
   createUser,
+  getUsersByRole,
   googleOAuth2SignIn,
   redeemChangePassword,
   refreshAccessToken,
@@ -11,6 +12,7 @@ import {
 } from "../../controllers/auth.controller";
 import { hasRole, requireAuth } from "../../middlewares/auth.middleware";
 import { Role } from "@prisma/client";
+import { auth } from "googleapis/build/src/apis/abusiveexperiencereport";
 
 const authRouter = express.Router();
 
@@ -22,5 +24,6 @@ authRouter.post("/redeem-change-password", redeemChangePassword);
 authRouter.post("/refresh", refreshAccessToken);
 authRouter.post("/google-signin", googleOAuth2SignIn);
 authRouter.post("/create-user", createUser);
+authRouter.get("/get-users-by-role", getUsersByRole);
 
 export default authRouter;

@@ -309,6 +309,17 @@ const handleGoogleSignIn = async (code: string) => {
   };
 };
 
+const handleGetUsersByRole = async (role: Role) => {
+  return await prisma.user.findMany({
+    where: {
+      role: role,
+    },
+    include: {
+      userProfile: true,
+    },
+  });
+};
+
 export {
   handleUserSignIn,
   handleUserSignUp,
@@ -318,4 +329,5 @@ export {
   handleRedeemChangePassword,
   exchangeAccessToken,
   handleGoogleSignIn,
+  handleGetUsersByRole,
 };

@@ -7,6 +7,7 @@ import { DataTable } from "@/components/ui/data-table"
 import { Button } from "@/components/ui/button"
 import { PlusCircle } from "lucide-react"
 import { toast } from "sonner"
+import { getAllStudents } from "@/services/studentService"
 
 // Define status directly in the file for now
 const UserStatus = {
@@ -16,25 +17,30 @@ const UserStatus = {
 
 const columns = [
   {
-    accessorKey: "studentId",
+    accessorKey: "username",
     header: "Student ID"
   },
   {
     accessorKey: "displayName",
-    header: "Name"
+    header: "Name",
+    cell: ({ row }) => row.original.displayName || 'N/A'
   },
   {
     accessorKey: "email",
     header: "Email"
   },
   {
-    accessorKey: "department",
-    header: "Department"
+    accessorKey: "role",
+    header: "Role"
   },
   {
-    accessorKey: "semester",
-    header: "Semester",
-    cell: ({ row }) => `${row.original.semester}${getSemesterSuffix(row.original.semester)}`
+    accessorKey: "authType",
+    header: "Auth Type"
+  },
+  {
+    accessorKey: "createdAt",
+    header: "Created At",
+    cell: ({ row }) => new Date(row.original.createdAt).toLocaleDateString()
   },
   {
     accessorKey: "status",
@@ -49,39 +55,20 @@ const columns = [
   }
 ]
 
-function getSemesterSuffix(semester) {
-  if (semester === 1) return 'st'
-  if (semester === 2) return 'nd'
-  if (semester === 3) return 'rd'
-  return 'th'
-}
-
 export default function StudentsPage() {
   const router = useRouter()
   const [students, setStudents] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Simulating data fetch for now
     const fetchStudents = async () => {
       try {
         setLoading(true)
-        // Temporary mock data
-        const mockStudents = [
-          {
-            studentId: "2024001",
-            displayName: "John Doe",
-            email: "john@example.com",
-            department: "Computer Science",
-            semester: 1,
-            status: UserStatus.ACTIVE
-          },
-          // Add more mock data as needed
-        ]
-        
-        setStudents(mockStudents)
+        const data = await getAllStudents()
+        setStudents(data)
       } catch (error) {
-        toast.error("Failed to fetch students")
+        toast.error(error.message || "Failed to fetch students")
+        setStudents([])
       } finally {
         setLoading(false)
       }
@@ -107,6 +94,8 @@ export default function StudentsPage() {
         columns={columns}
         data={students}
         isLoading={loading}
+        pagination
+        searchable
       />
     </div>
   )
