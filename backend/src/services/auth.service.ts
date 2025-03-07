@@ -17,6 +17,9 @@ import { TokenPayload, TokenType } from "../interfaces/auth.interface";
 const handleUserSignIn = async (email: string, password: string) => {
   const user = await prisma.user.findUnique({
     where: { email: email },
+    include: {
+      userProfile: true,
+    },
   });
 
   if (!user) {

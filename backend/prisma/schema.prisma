@@ -145,3 +145,44 @@ model ClubEvent {
   club        Club     @relation(fields: [clubId], references: [id])
   clubId      String   @db.ObjectId
 }
+
+model Cafeteria {
+  id          String @id @default(auto()) @map("_id") @db.ObjectId
+  CafeteriaName String
+  CafeteriaInfo String
+  CafeteriaMenu CafeteriaMenu[]
+}
+
+model CafeteriaMenu {
+  id          String @id @default(auto()) @map("_id") @db.ObjectId
+  menuName    String
+  foods Food[]
+  Cafeteria     Cafeteria @relation(fields: [CafeteriaId], references: [id])
+  CafeteriaId   String  @db.ObjectId
+}
+
+model Food {
+  id          String @id @default(auto()) @map("_id") @db.ObjectId
+  foodName    String
+  foodPrice   Float
+  foodType    FoodType
+  foodCategory FoodCategory
+  calories    Float @default(0)
+  protein     Float @default(0)
+  fat         Float @default(0)
+  carbs       Float @default(0)
+  CafeteriaMenu CafeteriaMenu @relation(fields: [CafeteriaMenuId], references: [id])
+  CafeteriaMenuId String @db.ObjectId
+}
+
+enum FoodType {
+  VEG
+  NON_VEG
+}
+
+enum FoodCategory {
+  BREAKFAST
+  LUNCH
+  DINNER
+  SNACKS
+}
