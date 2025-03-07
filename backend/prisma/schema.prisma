@@ -25,6 +25,7 @@ model User {
   userProfile            UserProfile?
   clubMemberInfo         ClubMemberInfo?
   changePasswordRequests ChangePasswordRequest[]
+  clubs                  UserClub[]
 }
 
 enum Role {
@@ -42,23 +43,23 @@ enum AuthType {
 }
 
 model UserProfile {
-  id           String       @id @default(auto()) @map("_id") @db.ObjectId
-  profileIntro String?
-  designation  String?
-  avatarUrl    String?
-  socialLinks  SocialLink[]
-  tenureStart  DateTime?
-  tenureEnd    DateTime?
-  clubGoals    String?
-  currentSemester String @default("Fall 2024")
-  levelTerm   String @default("Level 1 Term 1")
-  currentCgpa String @default("3.5")
-  requiredCredit Int @default(150)
-  completedCredit Int @default(0)
-  ongoingCredit Int @default(0)
-  department String @default("CSE")
-  user         User         @relation(fields: [userId], references: [id])
-  userId       String       @unique @db.ObjectId
+  id              String       @id @default(auto()) @map("_id") @db.ObjectId
+  profileIntro    String?
+  designation     String?
+  avatarUrl       String?
+  socialLinks     SocialLink[]
+  tenureStart     DateTime?
+  tenureEnd       DateTime?
+  clubGoals       String?
+  currentSemester String       @default("Fall 2024")
+  levelTerm       String       @default("Level 1 Term 1")
+  currentCgpa     String       @default("3.5")
+  requiredCredit  Int          @default(150)
+  completedCredit Int          @default(0)
+  ongoingCredit   Int          @default(0)
+  department      String       @default("CSE")
+  user            User         @relation(fields: [userId], references: [id])
+  userId          String       @unique @db.ObjectId
 }
 
 model SocialLink {
@@ -114,4 +115,33 @@ model ChangePasswordRequest {
   requestedAt  DateTime @default(now())
   user         User     @relation(fields: [userId], references: [id])
   userId       String   @unique @db.ObjectId
+}
+
+model Club {
+  id          String      @id @default(auto()) @map("_id") @db.ObjectId
+  clubName    String      @unique
+  clubInfo    String
+  clubGoals   String
+  clubEvents  ClubEvent[]
+  clubMembers UserClub[]
+}
+
+model UserClub {
+  id                     String                  @id @default(auto()) @map("_id") @db.ObjectId
+  userId                 String @db.ObjectId
+  clubId                 String @db.ObjectId
+  user                   User                    @relation(fields: [userId], references: [id])
+  club                   Club                    @relation(fields: [clubId], references: [id])
+
+  @@unique([userId, clubId])
+}
+model ClubEvent {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  eventName   String
+  eventDate   DateTime
+  eventVenue  String
+  eventInfo   String
+  eventPoster String
+  club        Club     @relation(fields: [clubId], references: [id])
+  clubId      String   @db.ObjectId
 }
