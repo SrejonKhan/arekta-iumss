@@ -28,6 +28,8 @@ const config = {
   AWS_S3_REGION: process.env.AWS_S3_REGION,
   AWS_S3_ACCESS_KEY: process.env.AWS_S3_ACCESS_KEY,
   AWS_S3_SECRET_ACCESS_KEY: process.env.AWS_S3_SECRET_ACCESS_KEY,
+
+  XAI_API_KEY: process.env.XAI_API_KEY,
 };
 
 export default config;
