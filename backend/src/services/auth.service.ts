@@ -314,6 +314,9 @@ const handleGetUsersByRole = async (role: Role) => {
     where: {
       role: role,
     },
+    include: {
+      userProfile: true,
+    },
   });
 };
 
